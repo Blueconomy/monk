@@ -64,7 +64,7 @@ def _detect_loops(
         for tc in call.tool_calls:
             tool_seq.append((tc.name, call.input_tokens, call.model))
 
-    if len(tool_seq) < SEQUENCE_LENGTH * LOOP_THRESHOLD:
+    if len(tool_seq) < LOOP_THRESHOLD:
         return []
 
     results = []

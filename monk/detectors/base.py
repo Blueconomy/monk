@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from monk.parsers.auto import TraceCall
+    from monk.parsers.otel import Span
 
 
 @dataclass
@@ -19,6 +20,12 @@ class Finding:
 
 class BaseDetector:
     name: str = "base"
+    requires_spans: bool = False   # True = needs Span data; False = works on TraceCall
 
     def run(self, calls: list["TraceCall"]) -> list[Finding]:
-        raise NotImplementedError
+        """Run detector on normalised TraceCall list. Override in TraceCall-based detectors."""
+        return []
+
+    def run_spans(self, roots: list["Span"]) -> list[Finding]:
+        """Run detector on OTEL span trees. Override in span-aware detectors."""
+        return []

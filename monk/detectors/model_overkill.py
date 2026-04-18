@@ -24,9 +24,11 @@ class ModelOverkillDetector(BaseDetector):
         # model -> (total_calls, overkill_calls, total_savings_usd)
         stats: dict[str, list] = defaultdict(lambda: [0, 0, 0.0])
 
+        _expensive_lower = {m.lower() for m in EXPENSIVE_MODELS}
         for call in calls:
             model_lower = call.model.lower()
-            if not any(m in model_lower for m in EXPENSIVE_MODELS):
+            # Exact match only — prevents "gpt-4o" substring-matching "gpt-4o-mini"
+            if model_lower not in _expensive_lower:
                 continue
             stats[call.model][0] += 1
 

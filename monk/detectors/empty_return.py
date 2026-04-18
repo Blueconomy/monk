@@ -19,7 +19,7 @@ _EMPTY_PATTERNS = {"", "none", "null", "[]", "{}", "n/a", "error", "undefined"}
 
 
 def _is_empty(result: str) -> bool:
-    return result.strip().lower() in _EMPTY_PATTERNS or len(result.strip()) < 5
+    return result.strip().lower() in _EMPTY_PATTERNS or len(result.strip()) < 3
 
 
 class EmptyReturnDetector(BaseDetector):

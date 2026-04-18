@@ -1,8 +1,15 @@
 """
 Auto-detecting trace parser.
 
-Normalises OpenAI, Anthropic, LangSmith, and generic JSONL logs
+Normalises OpenAI, Anthropic, LangSmith, OpenTelemetry, and generic JSONL logs
 into a single internal TraceCall schema so detectors stay framework-agnostic.
+
+Format detection order:
+  1. OpenTelemetry (OTLP proto-JSON or OTEL-field JSONL) → delegates to otel.py
+  2. OpenAI Chat Completions API response
+  3. Anthropic Messages API response
+  4. LangSmith run export
+  5. Generic JSONL (fallback)
 """
 
 from __future__ import annotations
@@ -42,12 +49,20 @@ def parse_traces(source: str | Path) -> list[TraceCall]:
     """
     Parse a trace file (JSONL or JSON array) and return normalised TraceCall list.
     Source can be a file path or a raw JSON string.
+
+    Automatically delegates to the OTEL parser when OpenTelemetry format is detected.
     """
     source = str(source)
     if Path(source).exists():
         text = Path(source).read_text(encoding="utf-8")
     else:
         text = source  # treat as raw string
+
+    # Detect OTEL format and delegate — import here to avoid circular imports
+    from monk.parsers.otel import is_otel_format, parse_spans, spans_to_trace_calls
+    if is_otel_format(text):
+        roots = parse_spans(text)  # always pass text, parse_spans handles file paths internally
+        return spans_to_trace_calls(roots)
 
     records = _load_records(text)
     calls: list[TraceCall] = []
