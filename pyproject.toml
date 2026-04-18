@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monk-ai"
+version = "0.1.0"
+description = "Find hidden cost leaks and blind spots in your agentic AI workflows"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Blueconomy AI", email = "hello@theblueconomy.ai" }
+]
+keywords = ["llm", "agents", "observability", "cost", "optimization", "agentic", "ai"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.9"
+dependencies = [
+  "click>=8.1",
+  "rich>=13.0",
+  "openai>=1.0",
+  "anthropic>=0.25",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+]
+
+[project.scripts]
+monk = "monk.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/blueconomy-ai/monk"
+Repository = "https://github.com/blueconomy-ai/monk"
+Issues = "https://github.com/blueconomy-ai/monk/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["monk*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

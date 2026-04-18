@@ -1,0 +1,29 @@
+{"session_id": "sess_001", "model": "gpt-4o", "input_tokens": 1200, "output_tokens": 45, "tool_name": "web_search", "tool_result": "Silicon Valley news today"}
+{"session_id": "sess_001", "model": "gpt-4o", "input_tokens": 1250, "output_tokens": 30, "tool_name": "web_search", "tool_result": "Silicon Valley news today"}
+{"session_id": "sess_001", "model": "gpt-4o", "input_tokens": 1300, "output_tokens": 28, "tool_name": "web_search", "tool_result": "Silicon Valley news today"}
+{"session_id": "sess_001", "model": "gpt-4o", "input_tokens": 1350, "output_tokens": 22, "tool_name": "web_search", "tool_result": "Silicon Valley news today"}
+{"session_id": "sess_002", "model": "gpt-4o", "input_tokens": 900, "output_tokens": 12, "tool_name": "get_user_profile", "tool_result": ""}
+{"session_id": "sess_002", "model": "gpt-4o", "input_tokens": 920, "output_tokens": 15, "tool_name": "get_user_profile", "tool_result": ""}
+{"session_id": "sess_002", "model": "gpt-4o", "input_tokens": 940, "output_tokens": 18, "tool_name": "get_user_profile", "tool_result": ""}
+{"session_id": "sess_002", "model": "gpt-4o", "input_tokens": 960, "output_tokens": 10, "tool_name": "get_user_profile", "tool_result": ""}
+{"session_id": "sess_002", "model": "gpt-4o", "input_tokens": 980, "output_tokens": 11, "tool_name": "get_user_profile", "tool_result": ""}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 400, "output_tokens": 60, "tool_name": "classify_intent", "tool_result": "billing"}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 420, "output_tokens": 55, "tool_name": "classify_intent", "tool_result": "billing"}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 430, "output_tokens": 50, "tool_name": "classify_intent", "tool_result": "shipping"}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 440, "output_tokens": 48, "tool_name": "classify_intent", "tool_result": "refund"}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 450, "output_tokens": 52, "tool_name": "classify_intent", "tool_result": "billing"}
+{"session_id": "sess_003", "model": "gpt-4o", "input_tokens": 460, "output_tokens": 49, "tool_name": "classify_intent", "tool_result": "billing"}
+{"session_id": "sess_004", "model": "claude-sonnet-4-6", "input_tokens": 500, "system_prompt_tokens": 300, "output_tokens": 80, "tool_name": "lookup_order", "tool_result": "order found"}
+{"session_id": "sess_004", "model": "claude-sonnet-4-6", "input_tokens": 700, "system_prompt_tokens": 300, "output_tokens": 90, "tool_name": "lookup_order", "tool_result": "order found"}
+{"session_id": "sess_004", "model": "claude-sonnet-4-6", "input_tokens": 1000, "system_prompt_tokens": 300, "output_tokens": 95, "tool_name": "summarise", "tool_result": "done"}
+{"session_id": "sess_004", "model": "claude-sonnet-4-6", "input_tokens": 1400, "system_prompt_tokens": 300, "output_tokens": 100, "tool_name": "respond", "tool_result": "sent"}
+{"session_id": "sess_004", "model": "claude-sonnet-4-6", "input_tokens": 1900, "system_prompt_tokens": 300, "output_tokens": 110, "tool_name": "respond", "tool_result": "sent"}
+{"session_id": "sess_005", "model": "gpt-4o", "input_tokens": 600, "system_prompt_tokens": 380, "output_tokens": 70, "tool_name": "fetch_data", "tool_result": "{}"}
+{"session_id": "sess_005", "model": "gpt-4o", "input_tokens": 620, "system_prompt_tokens": 380, "output_tokens": 65, "tool_name": "fetch_data", "tool_result": "{}"}
+{"session_id": "sess_005", "model": "gpt-4o", "input_tokens": 640, "system_prompt_tokens": 380, "output_tokens": 60, "tool_name": "fetch_data", "tool_result": "null"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 350, "output_tokens": 40, "tool_name": "web_search", "tool_result": "results"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 360, "output_tokens": 38, "tool_name": "get_page", "tool_result": "content"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 370, "output_tokens": 42, "tool_name": "web_search", "tool_result": "results"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 380, "output_tokens": 35, "tool_name": "get_page", "tool_result": "content"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 390, "output_tokens": 36, "tool_name": "web_search", "tool_result": "results"}
+{"session_id": "sess_006", "model": "gpt-4o", "input_tokens": 400, "output_tokens": 33, "tool_name": "get_page", "tool_result": "content"}
