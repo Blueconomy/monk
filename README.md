@@ -47,7 +47,7 @@ pip install monk-ai
 Or run from source:
 
 ```bash
-git clone https://github.com/blueconomy-ai/monk
+git clone https://github.com/Blueconomy/monk
 cd monk
 pip install -e .
 ```

@@ -97,7 +97,7 @@ def run(source: str, output_json: str | None, min_severity: str, detectors: str 
         console.print(
             "[red]No valid trace records found.[/red]\n"
             "monk expects JSONL files with fields like: model, input_tokens, output_tokens, session_id.\n"
-            "See: github.com/blueconomy-ai/monk#trace-format"
+            "See: github.com/Blueconomy/monk#trace-format"
         )
         sys.exit(1)
 

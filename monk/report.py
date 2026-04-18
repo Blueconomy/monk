@@ -124,6 +124,6 @@ def render_report(findings: list[Finding], total_calls: int, source: str) -> Non
     console.print(Rule(style="dim"))
     console.print(
         "[dim]monk is open source. Found something useful? "
-        "⭐ github.com/blueconomy-ai/monk[/dim]"
+        "⭐ github.com/Blueconomy/monk[/dim]"
     )
     console.print()

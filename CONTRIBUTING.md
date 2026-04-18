@@ -5,7 +5,7 @@ Thanks for wanting to improve monk. Contributions are welcome — from new detec
 ## Quick start
 
 ```bash
-git clone https://github.com/blueconomy-ai/monk
+git clone https://github.com/Blueconomy/monk
 cd monk
 pip install -e ".[dev]"
 pytest tests/ -v

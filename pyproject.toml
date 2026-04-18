@@ -40,9 +40,9 @@ dev = [
 monk = "monk.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/blueconomy-ai/monk"
-Repository = "https://github.com/blueconomy-ai/monk"
-Issues = "https://github.com/blueconomy-ai/monk/issues"
+Homepage = "https://github.com/Blueconomy/monk"
+Repository = "https://github.com/Blueconomy/monk"
+Issues = "https://github.com/Blueconomy/monk/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
