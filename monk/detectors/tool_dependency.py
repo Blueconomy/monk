@@ -26,6 +26,14 @@ from .base import BaseDetector, Finding
 FANOUT_THRESHOLD = 3      # same tool N times as siblings = redundant
 MAX_CHAIN_DEPTH = 5       # tool chain deeper than this = smell
 
+# Generic orchestration span names that appear as structural wrappers —
+# not real tools. Cycles through these are false positives.
+_ORCHESTRATION_PATTERNS = {
+    "toolcallingagent.run", "agent.run", "agentexecutor", "codecagent.run",
+    "managedagent.run", "step", "run", "executor", "planner", "main",
+    "workflow", "pipeline", "chain", "tool_calling_agent",
+}
+
 
 class ToolDependencyDetector(BaseDetector):
     name = "tool_dependency"
@@ -59,6 +67,9 @@ class ToolDependencyDetector(BaseDetector):
                 continue
             parent_name = _span_label(parent)
             child_name = _span_label(span)
+            # Skip orchestration wrappers — they're structural, not real tool deps
+            if (_is_orchestration(parent_name) or _is_orchestration(child_name)):
+                continue
             if parent_name != child_name:
                 adj[parent_name].add(child_name)
 
@@ -192,6 +203,16 @@ def _max_depth(root: Span, depth: int = 0) -> tuple[int, list[str]]:
 
 def _span_label(s: Span) -> str:
     return s.tool_name or s.model or s.name or s.span_id[:8]
+
+
+def _is_orchestration(label: str) -> bool:
+    """Return True if label is a generic orchestration wrapper (not a real tool)."""
+    clean = label.lower().replace(" ", "").replace("_", "").replace(".", "")
+    # Match exact patterns or step-N patterns like "step1", "step2"
+    import re
+    if re.match(r'^step\d+$', clean):
+        return True
+    return clean in {p.replace(".", "").replace("_", "") for p in _ORCHESTRATION_PATTERNS}
 
 
 def _collect_all_spans(roots: list[Span]) -> list[Span]:

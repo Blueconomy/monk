@@ -15,6 +15,7 @@ from .base import BaseDetector, Finding
 
 LOOP_THRESHOLD = 3       # pattern repeated this many times → loop
 SEQUENCE_LENGTH = 2      # look for repeated pairs of consecutive tool calls
+MIN_PATTERN_LEN = 2      # single-tool consecutive runs are handled by retry_loop; skip n=1
 
 
 class AgentLoopDetector(BaseDetector):
@@ -70,8 +71,8 @@ def _detect_loops(
     results = []
     names = [t[0] for t in tool_seq]
 
-    # Check for repeated N-grams
-    for n in range(1, SEQUENCE_LENGTH + 1):
+    # Check for repeated N-grams (skip n=1: consecutive single-tool runs → retry_loop)
+    for n in range(MIN_PATTERN_LEN, SEQUENCE_LENGTH + 1):
         ngram_counts: dict[tuple[str, ...], list[int]] = defaultdict(list)
         for i in range(len(names) - n + 1):
             gram = tuple(names[i:i + n])

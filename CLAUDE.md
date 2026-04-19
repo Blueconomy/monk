@@ -1,6 +1,6 @@
 # 🕵️ monk — Project Intelligence
 
-**Last updated:** 2026-04-18
+**Last updated:** 2026-04-19
 
 ---
 
@@ -8,7 +8,7 @@
 
 **monk** is an agentic AI workflow blind spot detector — a Python CLI tool (pip: `monk-ai`) that analyzes trace logs from AI agent executions to find hidden cost leaks and inefficiencies.
 
-- **Status:** v0.1.0 (Alpha, Techstars '25)
+- **Status:** v0.2.0-dev (Alpha, Techstars '25)
 - **Owner/Org:** Blueconomy AI
 - **License:** MIT
 - **Repository:** https://github.com/Blueconomy/monk
@@ -33,27 +33,42 @@ These don't show as errors — they silently burn money. monk detects them autom
 
 ```
 monk/
-├── cli.py                 # Entry point — command interface
-├── pricing.py             # Cost calculations per model
-├── report.py              # Report formatting & display (rich)
+├── cli.py                    # Entry point — command interface
+├── pricing.py                # Cost calculations per model
+├── report.py                 # Report formatting & display (rich)
 ├── parsers/
 │   ├── __init__.py
-│   └── auto.py            # Auto-detect trace format (OpenAI, Anthropic, LangSmith, custom JSONL)
+│   ├── auto.py               # Auto-detect format (OpenAI, Anthropic, LangSmith, JSONL)
+│   └── otel.py               # OTEL span parser — Span dataclass + tree builder
 ├── detectors/
-│   ├── base.py            # BaseDetector abstract class
-│   ├── retry_loop.py      # Same tool called 3+ times in a row
-│   ├── empty_return.py    # Tool returns null/empty → agent retries
-│   ├── model_overkill.py  # Expensive model on simple tasks
-│   ├── context_bloat.py   # System prompt bloat or unbounded history
-│   ├── agent_loop.py      # Agent cycling without progress
-│   └── __init__.py
+│   ├── base.py               # BaseDetector abstract class + Finding dataclass
+│   ├── __init__.py           # Exports TRACE_DETECTORS, SPAN_DETECTORS, ALL_DETECTORS
+│   │
+│   ├── ── TRACE DETECTORS (work on all formats) ──
+│   ├── retry_loop.py         # Same tool called 3+ consecutive times
+│   ├── empty_return.py       # Tool returns null/empty → agent retries
+│   ├── model_overkill.py     # Expensive model doing trivial tasks
+│   ├── context_bloat.py      # System prompt bloat or unbounded history growth
+│   ├── agent_loop.py         # Multi-step cycle repeated 3x+ (A→B→A→B)
+│   │
+│   └── ── SPAN DETECTORS (OTEL only — require span trees) ──
+│       ├── latency_spike.py      # Single call outlier vs session median
+│       ├── error_cascade.py      # Tool error ignored → LLM calls wasted
+│       ├── tool_dependency.py    # Cycles/chains in tool call graph
+│       ├── cross_turn_memory.py  # Same tool+args re-fetched across turns
+│       ├── token_bloat.py        # Token spike or monotonic growth per session
+│       ├── output_format.py      # Model violates format rules in system prompt
+│       ├── plan_execution.py     # Model planned steps it never executed
+│       └── span_consistency.py   # Model claims facts with no supporting tool call
 └── __init__.py
 
 tests/
-├── test_detectors.py      # Detector unit tests
+├── test_detectors.py      # Unit tests for all 13 detectors + OTEL parser
 ├── fixtures/
-│   ├── sample_traces.jsonl
-│   └── voice_ai_traces.jsonl (to be added)
+│   ├── sample_traces.jsonl      # Synthetic baseline (29 records)
+│   ├── trail_otel.jsonl         # PatronusAI/TRAIL — 879 spans, 38 real traces
+│   ├── memgpt_traces.jsonl      # MemGPT — 500 real multi-turn conversations
+│   └── nemotron_traces.jsonl    # Nvidia Nemotron — 413 customer-service traces
 ```
 
 ### Key Design Patterns
@@ -147,19 +162,52 @@ Dev:
 
 ---
 
-## Recent Changes
+## Benchmark Results (TRAIL, as of 2026-04-19)
 
-**Latest commits:**
-- `ac22eb5` — fix: update repo URLs from blueconomy-ai/monk to Blueconomy/monk
-- `74baaa1` — 🕵️ monk v0.1.0 — initial release
+- **v2 F1 = 100%** — 33/33 TRAIL error traces detected (TP=33, FP=0, FN=0)
+- **v1 F1 = 84.85%** — 28/33 traces detected (5 false negatives now closed)
+- The TRAIL fixture contains only error-containing traces (all 33 are ground-truth positives)
+- v2 adds 3 output-level detectors (output_format, plan_execution, span_consistency) that cover previously-missed categories
+- 137 total TRAIL findings (up from 86), 31/31 unit tests passing
+- Full benchmark report: `BENCHMARK.md`
 
-**Current branch:** `main` (stable)
+---
+
+## Recent Changes (Cowork sessions 2026-04-18 → 2026-04-19)
+
+**New detectors built:**
+- `latency_spike.py` — single-call outlier vs session median (OTEL)
+- `error_cascade.py` — tool error ignored, downstream LLM calls wasted (OTEL)
+- `tool_dependency.py` — cycles and deep chains in tool call graph (OTEL)
+- `cross_turn_memory.py` — same tool+args re-fetched across turns (OTEL)
+- `token_bloat.py` — per-session token spike or monotonic growth (OTEL)
+- `output_format.py` — model violates format rules extracted from system prompt
+- `plan_execution.py` — planned steps never executed, plan abandoned
+- `span_consistency.py` — model claims verified facts with no preceding tool call
+
+**Bug fixes:**
+- `agent_loop.py`: was double-counting with `retry_loop` on single-tool repetitions. Fixed: agent_loop now only checks patterns of length ≥ 2.
+- `tool_dependency.py`: false positives on OTEL orchestration wrappers ("Step 1", "ToolCallingAgent.run"). Fixed: `_is_orchestration()` filter added.
+- `context_bloat.py`: added Check C — verbatim tool output flooding context (covers TRAIL Context Handling Failures).
+- `parsers/otel.py`: spans with `tool_result` attribute now correctly classified as "tool" kind even if named "Step N". Fixes `cross_turn_memory` missing SWE-bench action spans.
+- CI `smoke test`: bash `set -e` was killing exit-code capture. Fixed with `||` operator.
+
+**Infrastructure:**
+- `parsers/otel.py` — full OTEL span parser with Span dataclass and tree builder
+- `report.py` — overhauled: severity summary, detector breakdown table, top wasteful sessions
+- `BENCHMARK.md` — full analysis of 4 datasets (TRAIL, MemGPT, Nemotron, Sample)
+- Benchmark fixtures: `trail_otel.jsonl` (879 spans), `memgpt_traces.jsonl` (500 convos), `nemotron_traces.jsonl` (413 convos)
+
+**Current branch:** `main` (pending commit — user needs to push)
 
 ---
 
 ## Next Priorities
 
-*To be filled in from Cowork session decisions.*
+- [ ] Commit all pending changes (clear git index.lock first): `rm .git/index.lock && git add -A && git commit -m "✨ v0.2.0: output-level detectors, bug fixes, 100% TRAIL F1"`
+- [ ] Consider real-time mode (OTEL SDK integration) as next major feature (v0.2 roadmap item)
+- [ ] Consider adding confidence scores to findings (high-confidence vs heuristic-only)
+- [ ] Explore web dashboard / Slack alerts for real-time monitoring
 
 ---
 

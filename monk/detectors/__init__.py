@@ -7,6 +7,10 @@ from .latency_spike import LatencySpikeDetector
 from .error_cascade import ErrorCascadeDetector
 from .tool_dependency import ToolDependencyDetector
 from .cross_turn_memory import CrossTurnMemoryDetector
+from .token_bloat import TokenBloatDetector
+from .output_format import OutputFormatDetector
+from .plan_execution import PlanExecutionDetector
+from .span_consistency import SpanConsistencyDetector
 
 # Detectors that run on normalised TraceCall lists (work on all formats)
 TRACE_DETECTORS = [
@@ -23,6 +27,10 @@ SPAN_DETECTORS = [
     ErrorCascadeDetector(),
     ToolDependencyDetector(),
     CrossTurnMemoryDetector(),
+    TokenBloatDetector(),
+    OutputFormatDetector(),
+    PlanExecutionDetector(),
+    SpanConsistencyDetector(),
 ]
 
 # Legacy alias — all detectors, used by CLI
@@ -38,6 +46,10 @@ __all__ = [
     "ErrorCascadeDetector",
     "ToolDependencyDetector",
     "CrossTurnMemoryDetector",
+    "TokenBloatDetector",
+    "OutputFormatDetector",
+    "PlanExecutionDetector",
+    "SpanConsistencyDetector",
     "TRACE_DETECTORS",
     "SPAN_DETECTORS",
     "ALL_DETECTORS",

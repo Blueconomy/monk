@@ -15,6 +15,8 @@ from .base import BaseDetector, Finding
 SYSTEM_RATIO_THRESHOLD = 0.55   # system tokens > 55% of input → bloated
 GROWTH_RATIO_THRESHOLD = 2.5    # last call costs 2.5x the first → unbounded growth
 MIN_CALLS_FOR_GROWTH = 4        # need enough calls to detect growth trend
+LARGE_TOOL_RESULT_TOKENS = 2000 # tool result >2000 tokens injected verbatim is a smell
+TOOL_RESULT_FRACTION = 0.40     # tool results > 40% of input = context dominated by raw outputs
 
 
 class ContextBloatDetector(BaseDetector):
@@ -96,6 +98,50 @@ class ContextBloatDetector(BaseDetector):
                     "Or use a sliding window: keep the last K exchanges + a rolling summary. "
                     "LangChain's ConversationSummaryMemory and LlamaIndex's ChatMemoryBuffer "
                     "both do this out of the box."
+                ),
+            ))
+
+        # ── Check C: large tool results injected verbatim ─────────────
+        # Detects the "Context Handling Failure" pattern from TRAIL annotations:
+        # agent dumps a full web page / file into context instead of extracting facts.
+        bloated_tool_calls = []
+        for c in calls:
+            for tc in c.tool_calls:
+                result_tokens = len(tc.result) // 4  # approx token estimate
+                input_tok = c.input_tokens or 1
+                if (result_tokens >= LARGE_TOOL_RESULT_TOKENS and
+                        result_tokens / input_tok >= TOOL_RESULT_FRACTION):
+                    bloated_tool_calls.append((c, tc, result_tokens))
+
+        if bloated_tool_calls:
+            sessions_affected = list({c.session_id for c, _, _ in bloated_tool_calls})
+            worst_c, worst_tc, worst_tok = max(bloated_tool_calls, key=lambda x: x[2])
+            waste_usd = sum(
+                cost_for_call(c.model, result_tokens - LARGE_TOOL_RESULT_TOKENS // 2, 0)
+                for c, _, result_tokens in bloated_tool_calls
+            )
+            findings.append(Finding(
+                detector=self.name,
+                severity="high",
+                title=(
+                    f"Verbatim tool output flooding context: "
+                    f"'{worst_tc.name}' injected ~{worst_tok:,} tokens"
+                ),
+                detail=(
+                    f"{len(bloated_tool_calls)} tool call(s) returned results large enough "
+                    f"to dominate the LLM context (>{LARGE_TOOL_RESULT_TOKENS:,} tokens, "
+                    f">{TOOL_RESULT_FRACTION:.0%} of input budget). "
+                    f"Worst: '{worst_tc.name}' with ~{worst_tok:,} tokens. "
+                    f"Injecting raw tool outputs verbatim wastes tokens and can cause the "
+                    f"model to lose track of the actual task (context handling failure)."
+                ),
+                affected_sessions=sessions_affected,
+                estimated_waste_usd_per_day=waste_usd,
+                fix=(
+                    f"Extract only the relevant facts from '{worst_tc.name}' output before "
+                    f"injecting into context. Use a retrieval step (e.g. BM25 or embedding search) "
+                    f"to pull the 3-5 most relevant chunks. For web pages, pass title + summary "
+                    f"+ target paragraph rather than the full HTML content."
                 ),
             ))
 

@@ -329,7 +329,8 @@ def _enrich_span(span: Span) -> None:
         span.model = str(model)
         span.input_tokens = input_tok
         span.output_tokens = output_tok
-    elif tool_name or "tool" in name_lower or "function_call" in name_lower:
+    elif tool_name or tool_result or "tool" in name_lower or "function_call" in name_lower:
+        # A span with tool_result (even named "Step N") is an action/tool span
         span.kind = "tool"
         span.tool_name = str(tool_name) or span.name
         span.tool_args = tool_args
