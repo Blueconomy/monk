@@ -26,7 +26,7 @@ SUPPORTED_EXTENSIONS = {".jsonl", ".json", ".log", ".txt"}
 
 DETECTOR_NAMES = {
     # TraceCall detectors
-    "retry_loop", "empty_return", "model_overkill", "context_bloat", "agent_loop",
+    "retry_loop", "empty_return", "model_overkill", "context_bloat", "agent_loop", "text_io",
     # Span detectors
     "latency_spike", "error_cascade", "tool_dependency", "cross_turn_memory",
 }
@@ -84,12 +84,18 @@ def main():
         "'otel' enables span-level analysis (latency, error cascade, dependency graph)."
     ),
 )
+@click.option(
+    "--samples", "samples_path", default=None,
+    help="Save labeled text I/O samples (for LLM judge training) to this JSONL file.",
+    metavar="FILE",
+)
 def run(
     source: str,
     output_json: str | None,
     min_severity: str,
     detectors: str | None,
     trace_format: str,
+    samples_path: str | None,
 ):
     """
     Analyse trace files for blind spots and cost leaks.
@@ -257,6 +263,23 @@ def run(
         ]
         Path(output_json).write_text(json_lib.dumps(data, indent=2))
         console.print(f"[dim]JSON report written to: {output_json}[/dim]")
+
+    # ── Optional samples output ───────────────────────────────────────
+    if samples_path:
+        from monk.samples import collect_samples_from_run
+        source_name = Path(source).name
+        collector = collect_samples_from_run(
+            calls=all_calls,
+            findings=findings,
+            output_path=samples_path,
+            source=source_name,
+        )
+        stats = collector.stats()
+        n = collector.flush()
+        console.print(
+            f"[dim]Saved {n} samples to {samples_path} "
+            f"({stats['bad']} bad, {stats['good']} good)[/dim]"
+        )
 
     # Exit code: 1 if high-severity findings exist (useful in CI)
     if any(f.severity == "high" for f in findings):

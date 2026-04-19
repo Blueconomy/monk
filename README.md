@@ -154,7 +154,7 @@ These are solvable problems. monk finds them.
 All evaluation datasets are publicly available:
 
 - **PatronusAI/TRAIL** — [github.com/patronus-ai/trail-benchmark](https://github.com/patronus-ai/trail-benchmark)
-- **monk benchmark fixtures** (TRAIL, MemGPT, Nemotron, Finance, WildClaw, GAIA) — [huggingface.co/datasets/BenTu22/monk-benchmarks](https://huggingface.co/datasets/BenTu22/monk-benchmarks)
+- **monk benchmark fixtures** (TRAIL, MemGPT, Nemotron, Finance, WildClaw, GAIA) — [huggingface.co/datasets/Blueconomy/monk-benchmarks](https://huggingface.co/datasets/Blueconomy/monk-benchmarks)
 
 ---
 

@@ -452,3 +452,64 @@ class TestSpanConsistency:
         findings = SpanConsistencyDetector().run_spans([llm0, fa, llm1])
         gap_findings = [f for f in findings if "final answer" in f.title.lower()]
         assert len(gap_findings) == 0
+
+
+# ── TextIODetector ───────────────────────────────────────────────────
+
+from monk.detectors.text_io import TextIODetector
+
+
+class TestTextIO:
+    def _make_call(self, session="s1", idx=0, input_tokens=1000, output_tokens=100):
+        return TraceCall(
+            session_id=session,
+            call_index=idx,
+            model="gpt-4o",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            system_prompt_tokens=0,
+            tool_calls=[],
+        )
+
+    def test_detects_low_compression(self):
+        """500 input tokens, 5 output tokens — ratio 0.01 < 0.02 threshold."""
+        calls = [self._make_call(input_tokens=500, output_tokens=5)]
+        findings = TextIODetector().run(calls)
+        low_comp = [f for f in findings if "compression" in f.title.lower()]
+        assert len(low_comp) >= 1
+        assert low_comp[0].severity == "medium"
+
+    def test_detects_truncated_output(self):
+        """1000 input, 3 output — below 10-token truncation threshold."""
+        calls = [self._make_call(input_tokens=1000, output_tokens=3)]
+        findings = TextIODetector().run(calls)
+        truncated = [f for f in findings if "truncation" in f.title.lower()]
+        assert len(truncated) >= 1
+        assert truncated[0].severity == "high"
+
+    def test_detects_input_growth(self):
+        """Session where input triples over 9 calls (100 → 300 tokens)."""
+        calls = []
+        for i in range(9):
+            # first 3 calls: 100 tokens, last 3 calls: 400 tokens → 4x growth
+            if i < 3:
+                input_tok = 100
+            elif i < 6:
+                input_tok = 200
+            else:
+                input_tok = 400
+            calls.append(self._make_call(session="grow", idx=i,
+                                          input_tokens=input_tok, output_tokens=50))
+        findings = TextIODetector().run(calls)
+        growth = [f for f in findings if "growing" in f.title.lower()]
+        assert len(growth) >= 1
+        assert growth[0].severity == "medium"
+
+    def test_clean_session_no_findings(self):
+        """Balanced I/O with consistent token counts — no findings expected."""
+        calls = [
+            self._make_call(session="clean", idx=i, input_tokens=300, output_tokens=100)
+            for i in range(6)
+        ]
+        findings = TextIODetector().run(calls)
+        assert len(findings) == 0

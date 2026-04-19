@@ -11,6 +11,7 @@ from .token_bloat import TokenBloatDetector
 from .output_format import OutputFormatDetector
 from .plan_execution import PlanExecutionDetector
 from .span_consistency import SpanConsistencyDetector
+from .text_io import TextIODetector
 
 # Detectors that run on normalised TraceCall lists (work on all formats)
 TRACE_DETECTORS = [
@@ -19,6 +20,7 @@ TRACE_DETECTORS = [
     ModelOverkillDetector(),
     ContextBloatDetector(),
     AgentLoopDetector(),
+    TextIODetector(),
 ]
 
 # Detectors that require OTEL span trees (deeper analysis)
@@ -50,6 +52,7 @@ __all__ = [
     "OutputFormatDetector",
     "PlanExecutionDetector",
     "SpanConsistencyDetector",
+    "TextIODetector",
     "TRACE_DETECTORS",
     "SPAN_DETECTORS",
     "ALL_DETECTORS",
