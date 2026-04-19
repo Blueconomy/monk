@@ -1,11 +1,5 @@
 """
 monk CLI — entry point.
-
-Usage:
-    monk run ./traces/
-    monk run session.jsonl
-    monk run otel_trace.jsonl --format otel
-    monk run --help
 """
 from __future__ import annotations
 
@@ -14,6 +8,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.text import Text
 
 from monk import __version__
 from monk.parsers import parse_traces, parse_spans, spans_to_trace_calls, is_otel_format
@@ -31,28 +26,267 @@ DETECTOR_NAMES = {
     "latency_spike", "error_cascade", "tool_dependency", "cross_turn_memory",
 }
 
+# ── Public HuggingFace dataset files ──────────────────────────────────────────
+HF_BASE = "https://huggingface.co/datasets/Blueconomy/monk-benchmarks/resolve/main"
+DEMO_DATASETS = [
+    {
+        "name":    "taubench_traces.jsonl",
+        "label":   "tau-bench",
+        "desc":    "17,932 calls · banking + e-commerce agents",
+        "size_mb": 4.2,
+    },
+    {
+        "name":    "finance_traces.jsonl",
+        "label":   "finance (10-K ReAct)",
+        "desc":    "4,610 calls · LangGraph financial analysis",
+        "size_mb": 1.1,
+    },
+    {
+        "name":    "trail_otel.jsonl",
+        "label":   "TRAIL (PatronusAI)",
+        "desc":    "879 spans · ground-truth benchmark (OTEL)",
+        "size_mb": 0.5,
+    },
+]
 
-@click.group()
+
+def _print_home():
+    """Print the monk home screen — shown when monk is run with no arguments."""
+    console.print()
+    console.print("  🕵️  [bold white]monk[/bold white] [dim]v{}[/dim]".format(__version__))
+    console.print()
+    console.print("  [dim]Find hidden cost leaks and blind spots in your AI agents.[/dim]")
+    console.print()
+    console.print("  [dim]─────────────────────────────────────────────────────────[/dim]")
+    console.print()
+
+    console.print("  [bold white]Getting started[/bold white]")
+    console.print()
+    console.print("    [bold orange1]monk init[/bold orange1]                        scaffold a traces/ folder + config")
+    console.print("    [bold orange1]monk demo[/bold orange1]                        download real agent data and run analysis")
+    console.print()
+    console.print("  [bold white]Core commands[/bold white]")
+    console.print()
+    console.print("    [orange1]monk run[/orange1] [cyan]./traces/[/cyan]               analyse a folder of trace files")
+    console.print("    [orange1]monk run[/orange1] [cyan]agent.jsonl[/cyan]             analyse a single file")
+    console.print("    [orange1]monk run[/orange1] [cyan]traces/[/cyan] [dim]--min-severity high[/dim]  surface only critical findings")
+    console.print("    [orange1]monk run[/orange1] [cyan]traces/[/cyan] [dim]--json report.json[/dim]   export findings for CI")
+    console.print()
+    console.print("  [bold white]Live mode[/bold white]")
+    console.print()
+    console.print("    [orange1]monk serve[/orange1] [cyan]./traces/[/cyan] [dim]--port 9090[/dim]     Prometheus metrics + /findings endpoint")
+    console.print("    [dim]Then open monk_dashboard.html in your browser — it auto-connects.[/dim]")
+    console.print()
+    console.print("  [bold white]Real-time instrumentation[/bold white] [dim](zero config)[/dim]")
+    console.print()
+    console.print("    [dim]import[/dim] [orange1]monk[/orange1]")
+    console.print("    [orange1]monk[/orange1][dim].instrument()    # patches openai + anthropic at import time[/dim]")
+    console.print()
+    console.print("  [dim]─────────────────────────────────────────────────────────[/dim]")
+    console.print()
+    console.print("  [dim]Docs · github.com/Blueconomy/monk[/dim]")
+    console.print("  [dim]PyPI · pip install monk-ai[/dim]")
+    console.print("  [dim]MIT · Blueconomy AI · Techstars '25[/dim]")
+    console.print()
+
+
+@click.group(invoke_without_command=True)
 @click.version_option(__version__, prog_name="monk")
-def main():
-    """
-    🕵️  monk — Find hidden cost leaks and blind spots in your agentic AI workflows.
+@click.pass_context
+def main(ctx):
+    """🕵️  monk — Find hidden cost leaks in your AI agents."""
+    if ctx.invoked_subcommand is None:
+        _print_home()
 
-    Drop monk on any trace file or folder and get a plain-English report
-    of what's wasting tokens — and exactly how to fix it.
 
-    Supports: OpenAI, Anthropic, LangSmith, OpenTelemetry (OTEL/OTLP), generic JSONL.
+@main.command()
+def init():
+    """Scaffold a traces/ folder and show next steps."""
+    import os
 
-    Examples:
+    console.print()
+    console.print("  🕵️  [bold white]monk init[/bold white]")
+    console.print()
+
+    # Create traces/ folder
+    traces_dir = Path("traces")
+    created = not traces_dir.exists()
+    traces_dir.mkdir(exist_ok=True)
+
+    if created:
+        console.print("  [green]✓[/green]  Created [cyan]./traces/[/cyan]")
+    else:
+        console.print("  [dim]·[/dim]  [cyan]./traces/[/cyan] already exists")
+
+    # Create .gitignore entry
+    gitignore = Path(".gitignore")
+    gitignore_entry = "traces/*.jsonl\n"
+    if gitignore.exists():
+        if gitignore_entry.strip() not in gitignore.read_text():
+            gitignore.write_text(gitignore.read_text() + gitignore_entry)
+            console.print("  [green]✓[/green]  Added traces/*.jsonl to [cyan].gitignore[/cyan]")
+    else:
+        gitignore.write_text(gitignore_entry)
+        console.print("  [green]✓[/green]  Created [cyan].gitignore[/cyan]")
+
+    console.print()
+    console.print("  [dim]─────────────────────────────────────────[/dim]")
+    console.print()
+    console.print("  [bold white]Next steps[/bold white]")
+    console.print()
+    console.print("  [dim]1.[/dim]  Download sample data to try monk immediately:")
+    console.print()
+    console.print("       [bold orange1]monk demo[/bold orange1]")
+    console.print()
+    console.print("  [dim]2.[/dim]  Or drop your own trace files into [cyan]./traces/[/cyan]")
+    console.print("       monk accepts: OpenAI, Anthropic, LangSmith, OTEL, generic JSONL")
+    console.print()
+    console.print("  [dim]3.[/dim]  Run analysis:")
+    console.print()
+    console.print("       [orange1]monk run[/orange1] [cyan]./traces/[/cyan]")
+    console.print()
+    console.print("  [dim]4.[/dim]  Start the live metrics server:")
+    console.print()
+    console.print("       [orange1]monk serve[/orange1] [cyan]./traces/[/cyan] [dim]--port 9090[/dim]")
+    console.print("       [dim]Then open monk_dashboard.html in your browser.[/dim]")
+    console.print()
+    console.print("  [dim]5.[/dim]  Instrument your agent (zero config):")
+    console.print()
+    console.print("       [dim]import[/dim] [orange1]monk[/orange1]")
+    console.print("       [orange1]monk[/orange1][dim].instrument()  # patches openai + anthropic[/dim]")
+    console.print()
+
+
+@main.command()
+@click.option("--dataset", default="all",
+              type=click.Choice(["all", "taubench", "finance", "trail"]),
+              help="Which sample dataset to download (default: all).")
+@click.option("--dir", "dest_dir", default="./traces",
+              help="Destination folder (default: ./traces).")
+@click.option("--no-run", is_flag=True, default=False,
+              help="Download only, skip analysis.")
+def demo(dataset, dest_dir, no_run):
+    """Download real agent trace data and run analysis.
 
     \b
-        monk run ./traces/
-        monk run agent_session.jsonl
-        monk run otel_spans.jsonl --format otel
-        monk run --json report.json traces/
-        monk run --min-severity high traces/
+    Pulls from: huggingface.co/datasets/Blueconomy/monk-benchmarks
+
+    Datasets available:
+      taubench  — 17,932 calls, banking + e-commerce agents
+      finance   — 4,610 calls, LangGraph financial analysis (10-K ReAct)
+      trail     — 879 spans, PatronusAI TRAIL benchmark (OpenTelemetry)
     """
-    pass
+    import urllib.request
+    import urllib.error
+
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+
+    # Pick which datasets to download
+    if dataset == "all":
+        targets = DEMO_DATASETS
+    else:
+        key_map = {"taubench": 0, "finance": 1, "trail": 2}
+        targets = [DEMO_DATASETS[key_map[dataset]]]
+
+    console.print()
+    console.print("  🕵️  [bold white]monk demo[/bold white]")
+    console.print()
+    console.print(
+        "  Downloading real agent traces from "
+        "[cyan]huggingface.co/datasets/Blueconomy/monk-benchmarks[/cyan]"
+    )
+    console.print()
+
+    downloaded = []
+    for ds in targets:
+        url  = f"{HF_BASE}/{ds['name']}"
+        dest_file = dest / ds["name"]
+
+        if dest_file.exists():
+            console.print(
+                f"  [dim]·[/dim]  [cyan]{ds['name']}[/cyan]  "
+                f"[dim]already downloaded — skipping[/dim]"
+            )
+            downloaded.append(dest_file)
+            continue
+
+        console.print(
+            f"  [dim]↓[/dim]  [cyan]{ds['name']}[/cyan]  "
+            f"[dim]{ds['desc']} · ~{ds['size_mb']}MB[/dim]",
+            end="",
+        )
+
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": f"monk/{__version__}"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+            dest_file.write_bytes(data)
+            kb = len(data) // 1024
+            console.print(f"  [green]✓[/green]  ({kb:,} KB)")
+            downloaded.append(dest_file)
+        except urllib.error.HTTPError as e:
+            console.print(f"  [red]✗[/red]  HTTP {e.code}")
+        except Exception as e:
+            console.print(f"  [red]✗[/red]  {e}")
+
+    if not downloaded:
+        console.print()
+        console.print("  [red]No files downloaded.[/red]")
+        console.print("  Check your internet connection or visit:")
+        console.print("  [cyan]https://huggingface.co/datasets/Blueconomy/monk-benchmarks[/cyan]")
+        sys.exit(1)
+
+    console.print()
+
+    if no_run:
+        console.print(f"  Files saved to [cyan]{dest}[/cyan]")
+        console.print()
+        console.print(f"  Run:  [orange1]monk run[/orange1] [cyan]{dest}[/cyan]")
+        console.print()
+        return
+
+    # Run analysis on each file individually so we see per-file results
+    console.print("  [dim]─────────────────────────────────────────[/dim]")
+    console.print()
+
+    from monk.parsers.auto import parse_traces
+    from monk.parsers.otel import is_otel_format, parse_spans, spans_to_trace_calls
+    from monk.report import render_report
+
+    severity_order = {"low": 0, "medium": 1, "high": 2}
+
+    for f in downloaded:
+        text = f.read_text(encoding="utf-8", errors="replace")
+
+        if is_otel_format(text):
+            roots = parse_spans(f)
+            calls = spans_to_trace_calls(roots)
+            findings = []
+            for det in ALL_DETECTORS:
+                if det.requires_spans:
+                    findings.extend(det.run_spans(roots))
+                else:
+                    findings.extend(det.run(calls))
+        else:
+            calls = parse_traces(str(f))
+            findings = []
+            for det in ALL_DETECTORS:
+                if not det.requires_spans:
+                    findings.extend(det.run(calls))
+
+        findings.sort(key=lambda x: (
+            -severity_order.get(x.severity, 0),
+            -x.estimated_waste_usd_per_day,
+        ))
+        render_report(findings, len(calls), str(f))
+
+    console.print()
+    console.print(
+        "  [dim]Tip:[/dim] start the live dashboard with "
+        "[orange1]monk serve[/orange1] [cyan]./traces/[/cyan] [dim]--port 9090[/dim]"
+    )
+    console.print()
 
 
 @main.command()
@@ -284,3 +518,13 @@ def run(
     # Exit code: 1 if high-severity findings exist (useful in CI)
     if any(f.severity == "high" for f in findings):
         sys.exit(1)
+
+
+@main.command()
+@click.argument("path", default="./traces")
+@click.option("--port", default=9090, help="Metrics server port")
+@click.option("--interval", default=30, help="Rescan interval in seconds")
+def serve(path, port, interval):
+    """Start a Prometheus metrics server that watches PATH for trace files."""
+    from monk.serve import serve as _serve
+    _serve(path, port=port, interval=interval)
