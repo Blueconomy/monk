@@ -1,6 +1,6 @@
 # 🕵️ monk — Project Intelligence
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-04-21
 
 ---
 
@@ -8,7 +8,7 @@
 
 **monk** is an agentic AI workflow blind spot detector — a Python CLI tool (pip: `monk-ai`) that analyzes trace logs from AI agent executions to find hidden cost leaks and inefficiencies.
 
-- **Status:** v0.4.6 (Alpha, Techstars '25)
+- **Status:** v0.4.8 (Alpha, Techstars '25)
 - **Owner/Org:** Blueconomy AI
 - **License:** MIT
 - **Repository:** https://github.com/Blueconomy/monk
@@ -38,7 +38,7 @@ monk/
 ├── report.py                 # Report formatting & display (rich)
 ├── parsers/
 │   ├── __init__.py
-│   ├── auto.py               # Auto-detect format (OpenAI, Anthropic, LangSmith, JSONL)
+│   ├── auto.py               # Auto-detect format (OpenAI, Anthropic, LangGraph, LangSmith, JSONL)
 │   └── otel.py               # OTEL span parser — Span dataclass + tree builder
 ├── detectors/
 │   ├── base.py               # BaseDetector abstract class + Finding dataclass
@@ -50,6 +50,7 @@ monk/
 │   ├── model_overkill.py     # Expensive model doing trivial tasks
 │   ├── context_bloat.py      # System prompt bloat or unbounded history growth
 │   ├── agent_loop.py         # Multi-step cycle repeated 3x+ (A→B→A→B)
+│   ├── handoff_loop.py       # Multi-agent transfer cycling (Supervisor/Swarm A↔B bounce)
 │   │
 │   └── ── SPAN DETECTORS (OTEL only — require span trees) ──
 │       ├── latency_spike.py      # Single call outlier vs session median
@@ -63,7 +64,7 @@ monk/
 └── __init__.py
 
 tests/
-├── test_detectors.py      # Unit tests for all 13 detectors + OTEL parser
+├── test_detectors.py      # Unit tests for all 15 detectors + OTEL parser
 ├── fixtures/
 │   ├── sample_traces.jsonl      # Synthetic baseline (29 records)
 │   ├── trail_otel.jsonl         # PatronusAI/TRAIL — 879 spans, 38 real traces
@@ -73,7 +74,7 @@ tests/
 
 ### Key Design Patterns
 - **BaseDetector:** All detectors inherit, implement `detect(traces)` → `Findings` list
-- **Auto-parser:** Detects format (OpenAI API response, Anthropic Messages, LangSmith export, or raw JSONL)
+- **Auto-parser:** Detects format (OpenAI API response, Anthropic Messages, LangGraph invoke response, LangSmith export, or raw JSONL)
 - **Rich formatting:** Pretty console output with severity badges (🔴 high, 🟡 medium, 🟢 low)
 - **JSON export:** CI-friendly format with `--json findings.json` flag
 
@@ -173,30 +174,25 @@ Dev:
 
 ---
 
-## Recent Changes (Cowork sessions 2026-04-18 → 2026-04-19)
+## Recent Changes (Cowork sessions 2026-04-18 → 2026-04-21)
 
-**New detectors built:**
-- `latency_spike.py` — single-call outlier vs session median (OTEL)
-- `error_cascade.py` — tool error ignored, downstream LLM calls wasted (OTEL)
-- `tool_dependency.py` — cycles and deep chains in tool call graph (OTEL)
-- `cross_turn_memory.py` — same tool+args re-fetched across turns (OTEL)
-- `token_bloat.py` — per-session token spike or monotonic growth (OTEL)
-- `output_format.py` — model violates format rules extracted from system prompt
-- `plan_execution.py` — planned steps never executed, plan abandoned
-- `span_consistency.py` — model claims verified facts with no preceding tool call
+**v0.4.8 — LangGraph support + handoff_loop detector (2026-04-21)**
+- `parsers/auto.py`: LangGraph format parser — detects `messages[]` with `usage_metadata`, extracts one TraceCall per AIMessage, resolves tool results via `tool_call_id` matching
+- `detectors/handoff_loop.py`: new TRACE_DETECTORS entry — catches `transfer_to_*` / `transfer_back_to_*` cycling between agents (A↔B bouncing 3+ times). Fires on LangGraph Supervisor and Swarm traces
+- `simulate.py`: `supervisor` preset (gpt-4o routing to gpt-4o-mini specialist, linear — surfaces model_overkill) and `swarm` preset (peer agents cycling with back-edge — surfaces handoff_loop)
+- `serve.py`: 🏢 Supervisor and 🐝 Swarm preset buttons added to Simulate tab
 
-**Bug fixes:**
-- `agent_loop.py`: was double-counting with `retry_loop` on single-tool repetitions. Fixed: agent_loop now only checks patterns of length ≥ 2.
-- `tool_dependency.py`: false positives on OTEL orchestration wrappers ("Step 1", "ToolCallingAgent.run"). Fixed: `_is_orchestration()` filter added.
-- `context_bloat.py`: added Check C — verbatim tool output flooding context (covers TRAIL Context Handling Failures).
-- `parsers/otel.py`: spans with `tool_result` attribute now correctly classified as "tool" kind even if named "Step N". Fixes `cross_turn_memory` missing SWE-bench action spans.
-- CI `smoke test`: bash `set -e` was killing exit-code capture. Fixed with `||` operator.
+**v0.4.7 — simulate command + bug fixes (2026-04-20)**
+- `monk simulate` CLI command with `--pattern`, `--sessions`, `-o`, `--seed`, `--run` flags
+- OTEL workflow simulation engine in `simulate.py` — converts node+edge graph to valid OTEL spans
+- Simulate tab in dashboard — visual graph editor, 5 presets, SVG bezier edges, `/simulate` endpoint
+- `agent_loop.py` fix: skip single-tool n-grams (was double-firing with retry_loop)
+- Scan debounce (8s) in `serve.py` to prevent log spam
 
-**Infrastructure:**
-- `parsers/otel.py` — full OTEL span parser with Span dataclass and tree builder
-- `report.py` — overhauled: severity summary, detector breakdown table, top wasteful sessions
-- `BENCHMARK.md` — full analysis of 4 datasets (TRAIL, MemGPT, Nemotron, Sample)
-- Benchmark fixtures: `trail_otel.jsonl` (879 spans), `memgpt_traces.jsonl` (500 convos), `nemotron_traces.jsonl` (413 convos)
+**v0.4.6 — 9 OTEL span detectors + dashboard overhaul (2026-04-19)**
+- `latency_spike`, `error_cascade`, `tool_dependency`, `cross_turn_memory`, `token_bloat`, `output_format`, `plan_execution`, `span_consistency` — all OTEL span detectors
+- White+orange dashboard redesign, quickstart command, dataset downloader
+- 100% F1 on TRAIL benchmark (33/33 error traces, 0 FP)
 
 **Current branch:** `main` (pending commit — user needs to push)
 
@@ -204,14 +200,17 @@ Dev:
 
 ## Next Priorities
 
-- [ ] Commit pending changes and push to GitHub:
+- [ ] Commit v0.4.8 and push to GitHub:
   ```bash
   cd ~/Documents/ClaudeProject/monk
   rm -f .git/index.lock .git/HEAD.lock
-  git add monk/__init__.py monk/cli.py monk/serve.py pyproject.toml CLAUDE.md tests/fixtures/demo_traces.jsonl
-  git commit -m "✨ v0.4.6: white+orange dashboard, quickstart command, demo data"
+  git add monk/__init__.py monk/parsers/auto.py monk/detectors/handoff_loop.py \
+          monk/detectors/__init__.py monk/simulate.py monk/serve.py \
+          pyproject.toml README.md CLAUDE.md
+  git commit -m "✨ v0.4.8: LangGraph parser, handoff_loop detector, supervisor/swarm presets"
   git push https://baman95:GITHUB_TOKEN@github.com/Blueconomy/monk.git main
   ```
+- [ ] Add unit tests for `handoff_loop` and LangGraph parser to `tests/test_detectors.py`
 - [ ] Consider real-time mode (OTEL SDK integration) as next major feature
 - [ ] Consider adding confidence scores to findings (high-confidence vs heuristic-only)
 - [ ] Explore Slack / PagerDuty alerts for real-time monitoring

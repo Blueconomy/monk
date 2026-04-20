@@ -3,6 +3,7 @@ from .empty_return import EmptyReturnDetector
 from .model_overkill import ModelOverkillDetector
 from .context_bloat import ContextBloatDetector
 from .agent_loop import AgentLoopDetector
+from .handoff_loop import HandoffLoopDetector
 from .latency_spike import LatencySpikeDetector
 from .error_cascade import ErrorCascadeDetector
 from .tool_dependency import ToolDependencyDetector
@@ -20,6 +21,7 @@ TRACE_DETECTORS = [
     ModelOverkillDetector(),
     ContextBloatDetector(),
     AgentLoopDetector(),
+    HandoffLoopDetector(),
     TextIODetector(),
 ]
 
@@ -44,6 +46,7 @@ __all__ = [
     "ModelOverkillDetector",
     "ContextBloatDetector",
     "AgentLoopDetector",
+    "HandoffLoopDetector",
     "LatencySpikeDetector",
     "ErrorCascadeDetector",
     "ToolDependencyDetector",

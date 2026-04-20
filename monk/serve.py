@@ -461,6 +461,47 @@ footer .right{display:flex;gap:18px}
 footer a{font-size:11px;color:var(--t3);text-decoration:none;transition:color .15s}
 footer a:hover{color:var(--or)}
 
+/* SIMULATE TAB */
+.sim-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.sim-main{display:grid;grid-template-columns:196px 1fr 196px;gap:12px;height:400px;margin-bottom:16px}
+.sim-sidebar{display:flex;flex-direction:column;gap:10px}
+.sim-sec{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
+.sim-add{width:100%;padding:8px 10px;border-radius:7px;border:1.5px solid;font-size:11px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:6px;font-family:inherit;transition:all .12s}
+.sim-add.llm{border-color:#fed7aa;color:#c2410c;background:#fff7ed}.sim-add.llm:hover{background:#fed7aa}
+.sim-add.tool{border-color:#bfdbfe;color:#1d4ed8;background:#eff6ff}.sim-add.tool:hover{background:#bfdbfe}
+#sim-wrap{position:relative;border:1.5px solid var(--b1);border-radius:var(--radius);overflow:hidden;background:var(--bg);background-image:radial-gradient(var(--b1) 1px,transparent 1px);background-size:22px 22px}
+#sim-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1}
+#sim-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2}
+.sim-empty-cv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.sim-run{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.cfg-f{margin-bottom:10px}
+.cfg-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.cfg-inp{width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--b2);background:var(--s1);font-size:12px;color:var(--t1);font-family:inherit;box-sizing:border-box}
+.cfg-inp:focus{outline:none;border-color:var(--or3)}
+input[type=range].cfg-inp{padding:2px 0;accent-color:var(--or)}
+/* nodes */
+.sn{position:absolute;width:160px;height:52px;border-radius:9px;border:1.5px solid;display:flex;align-items:center;user-select:none;z-index:10;box-shadow:var(--shadow);transition:box-shadow .12s}
+.sn:hover{box-shadow:var(--shadow-md)}
+.sn.sel{outline:2px solid var(--or);outline-offset:2px}
+.sn.llm{background:#fff7ed;border-color:#fed7aa}
+.sn.tool{background:#eff6ff;border-color:#bfdbfe}
+.sn-body{flex:1;display:flex;align-items:center;gap:7px;padding:0 8px;min-width:0;cursor:grab}
+.sn-body:active{cursor:grabbing}
+.sn-icon{font-size:15px;flex-shrink:0}
+.sn-lbl{font-size:11px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sn-port{width:13px;height:13px;border-radius:50%;flex-shrink:0;cursor:crosshair;transition:transform .1s;z-index:11}
+.sn-port:hover{transform:scale(1.4)}
+.sn-in{background:var(--b2);border:2px solid var(--b3)}
+.sn-out{background:var(--or);border:2px solid #c2410c}
+.sn.conn-src .sn-out{background:#16a34a;border-color:#14532d;animation:pulse 1s infinite}
+#sim-status{font-size:11px;color:var(--or);font-weight:500;min-height:16px;margin-bottom:8px}
+.sim-res-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b1);font-size:12px}
+.sim-res-item:last-child{border-bottom:none}
+.sim-res-lbl{color:var(--t3)}
+.sim-res-val{font-weight:700;font-family:var(--mono);color:var(--t1)}
+.sim-res-val.or{color:var(--or)}
+.sim-res-val.red{color:var(--red)}
+
 /* SCAN BANNER */
 #scan-banner{display:none;align-items:center;gap:12px;padding:10px 32px;background:var(--or2);border-bottom:1px solid var(--or3)}
 #scan-banner.show{display:flex}
@@ -495,6 +536,7 @@ footer a:hover{color:var(--or)}
   <div class="tab active" onclick="switchTab('overview')">Overview</div>
   <div class="tab" onclick="switchTab('findings')">Findings</div>
   <div class="tab" onclick="switchTab('datasets')">Datasets</div>
+  <div class="tab" onclick="switchTab('simulate')">Simulate ✦</div>
 </div>
 
 <div class="page">
@@ -647,6 +689,95 @@ footer a:hover{color:var(--or)}
 
   </div>
 
+  <!-- ══ SIMULATE ══════════════════════════════════════════════════════════ -->
+  <div class="tab-pane" id="tab-simulate">
+
+    <div class="sim-bar">
+      <span class="sh-title" style="margin-right:4px">PRESETS</span>
+      <button class="btn" onclick="simLoad('retry_loop')">🔄 Retry Loop</button>
+      <button class="btn" onclick="simLoad('agent_loop')">🔁 Agent Loop</button>
+      <button class="btn" onclick="simLoad('empty_return')">🕳 Empty Return</button>
+      <button class="btn" onclick="simLoad('context_bloat')">📈 Context Bloat</button>
+      <button class="btn" onclick="simLoad('healthy')">✅ Healthy</button>
+      <button class="btn" onclick="simLoad('supervisor')">🏢 Supervisor</button>
+      <button class="btn" onclick="simLoad('swarm')">🐝 Swarm</button>
+      <button class="btn" style="margin-left:auto" onclick="simClear()">✕ Clear</button>
+    </div>
+
+    <div id="sim-status"></div>
+
+    <div class="sim-main">
+      <!-- left sidebar -->
+      <div class="sim-sidebar">
+        <div class="sim-sec">
+          <div class="cfg-lbl" style="margin-bottom:8px">ADD NODE</div>
+          <button class="sim-add llm" onclick="simAddNode('llm')">🤖 LLM Call</button>
+          <button class="sim-add tool" onclick="simAddNode('tool')">🔧 Tool Call</button>
+          <div style="height:1px;background:var(--b1);margin:8px 0"></div>
+          <div style="font-size:10px;color:var(--t4);line-height:1.5">
+            Click <span style="color:var(--or);font-weight:600">●</span> right port<br>
+            then a left port to connect nodes
+          </div>
+        </div>
+        <div class="sim-sec" style="flex:1;overflow-y:auto">
+          <div id="sim-cfg">
+            <div style="text-align:center;padding:16px 0">
+              <div style="font-size:22px">👆</div>
+              <div style="font-size:11px;color:var(--t3);margin-top:6px">Click a node to configure</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- graph canvas -->
+      <div id="sim-wrap">
+        <svg id="sim-svg"><defs>
+          <marker id="ah-or" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f97316"/></marker>
+          <marker id="ah-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
+        </defs></svg>
+        <div id="sim-canvas">
+          <div class="sim-empty-cv" id="sim-empty">
+            <div style="font-size:36px">🕸️</div>
+            <div style="font-size:13px;font-weight:600;color:var(--t2);margin-top:10px">Build your workflow</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:4px">Load a preset above or add nodes from the left</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- run panel -->
+      <div class="sim-run">
+        <div class="cfg-lbl" style="margin-bottom:12px">RUN CONFIG</div>
+        <div class="cfg-f">
+          <label class="cfg-lbl">Sessions</label>
+          <input type="number" id="sim-sessions" value="5" min="1" max="30" class="cfg-inp">
+        </div>
+        <div class="cfg-f">
+          <label class="cfg-lbl">Default model</label>
+          <select id="sim-model" class="cfg-inp">
+            <option value="gpt-4o">gpt-4o</option>
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="claude-opus-4-6">claude-opus-4-6</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="sim-run-btn"
+          style="width:100%;padding:10px;font-size:13px;margin-top:8px" onclick="simRun()">
+          ▶ Run Simulation
+        </button>
+        <div id="sim-res" style="display:none;margin-top:14px">
+          <div style="height:1px;background:var(--b1);margin-bottom:12px"></div>
+          <div class="cfg-lbl" style="margin-bottom:8px">RESULTS</div>
+          <div id="sim-res-body"></div>
+          <button class="btn" style="width:100%;margin-top:10px;font-size:11px"
+            onclick="switchTab('overview');setTimeout(loadFindings,500)">
+            View in Overview ↑
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div>
 
 <footer>
@@ -686,7 +817,7 @@ const FIXES={
 
 function switchTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.className='tab'+((['overview','findings','datasets'])[i]===id?' active':'');
+    t.className='tab'+((['overview','findings','datasets','simulate'])[i]===id?' active':'');
   });
   document.querySelectorAll('.tab-pane').forEach(p=>{
     p.className='tab-pane'+(p.id==='tab-'+id?' active':'');
@@ -857,6 +988,267 @@ async function loadSample(){
 
 loadFindings();
 setInterval(loadFindings,15000);
+
+// ── SIMULATE TAB ──────────────────────────────────────────────────────────
+const NW=160,NH=52;
+let G={nodes:[],edges:[]};
+let simSel=null,simConn=null,simDrag=null,simNC=0;
+const SIM_PRESETS={
+  retry_loop:{name:'Retry Loop',desc:'Same tool called 4× — timeout pattern',
+    nodes:[
+      {id:'n1',type:'llm',label:'LLM Call',x:80,y:130,config:{model:'gpt-4o',tokens_in:2100,tokens_out:95,latency_ms:800}},
+      {id:'n2',type:'tool',label:'database_query',x:310,y:130,config:{tool_name:'database_query',failure:'timeout',failure_rate:0.9,failure_result:'Connection timeout',success_result:'[{id:1}]',latency_ms:1200,max_retries:4}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n2'}]},
+  agent_loop:{name:'Agent Loop',desc:'search→rank→search→rank with no progress',
+    nodes:[
+      {id:'n1',type:'llm',label:'LLM Plan',x:60,y:150,config:{model:'gpt-4o',tokens_in:1900,tokens_out:140,latency_ms:700}},
+      {id:'n2',type:'tool',label:'search_docs',x:270,y:60,config:{tool_name:'search_documents',failure:'none',failure_rate:0,success_result:'results',latency_ms:400}},
+      {id:'n3',type:'llm',label:'LLM Rank',x:480,y:60,config:{model:'gpt-4o',tokens_in:2100,tokens_out:120,latency_ms:700}},
+      {id:'n4',type:'tool',label:'rank_results',x:480,y:230,config:{tool_name:'rank_results',failure:'none',failure_rate:0,success_result:'ranked',latency_ms:300}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n3'},{src:'n3',dst:'n4'},{src:'n4',dst:'n1'}]},
+  empty_return:{name:'Empty Return',desc:'Tool returns empty 80% — agent retries',
+    nodes:[
+      {id:'n1',type:'llm',label:'LLM Call',x:80,y:130,config:{model:'gpt-4o',tokens_in:1800,tokens_out:110,latency_ms:600}},
+      {id:'n2',type:'tool',label:'web_search',x:310,y:130,config:{tool_name:'web_search',failure:'empty',failure_rate:0.8,failure_result:'',success_result:'Search results...',latency_ms:600,max_retries:5}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n2'}]},
+  context_bloat:{name:'Context Bloat',desc:'System prompt > 65% of token budget',
+    nodes:[
+      {id:'n1',type:'llm',label:'LLM (bloated)',x:80,y:130,config:{model:'gpt-4o',tokens_in:14000,tokens_out:200,system_tokens:9100,latency_ms:1800}},
+      {id:'n2',type:'tool',label:'lookup',x:310,y:130,config:{tool_name:'lookup',failure:'none',failure_rate:0,success_result:'data',latency_ms:300}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n1'}]},
+  healthy:{name:'Healthy Agent',desc:'Clean agent — expect zero findings',
+    nodes:[
+      {id:'n1',type:'llm',label:'LLM Call',x:80,y:130,config:{model:'gpt-4o-mini',tokens_in:900,tokens_out:250,latency_ms:400}},
+      {id:'n2',type:'tool',label:'fetch_data',x:310,y:70,config:{tool_name:'fetch_data',failure:'none',failure_rate:0,success_result:'data',latency_ms:200}},
+      {id:'n3',type:'tool',label:'write_output',x:310,y:200,config:{tool_name:'write_output',failure:'none',failure_rate:0,success_result:'written',latency_ms:150}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n1',dst:'n3'}]},
+  supervisor:{name:'Supervisor (Model Overkill)',desc:'gpt-4o routes to gpt-4o-mini specialist — expensive routing',
+    nodes:[
+      {id:'n1',type:'llm',label:'Supervisor LLM',x:60,y:140,config:{model:'gpt-4o',tokens_in:1200,tokens_out:60,latency_ms:700}},
+      {id:'n2',type:'tool',label:'transfer_to_specialist',x:260,y:140,config:{tool_name:'transfer_to_specialist',failure:'none',failure_rate:0,success_result:'Transferred',latency_ms:50}},
+      {id:'n3',type:'llm',label:'Specialist LLM',x:440,y:140,config:{model:'gpt-4o-mini',tokens_in:800,tokens_out:200,latency_ms:400}},
+      {id:'n4',type:'tool',label:'compute',x:600,y:70,config:{tool_name:'compute',failure:'none',failure_rate:0,success_result:'result',latency_ms:180}},
+      {id:'n5',type:'tool',label:'transfer_back_to_supervisor',x:600,y:210,config:{tool_name:'transfer_back_to_supervisor',failure:'none',failure_rate:0,success_result:'Back',latency_ms:50}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n3'},{src:'n3',dst:'n4'},{src:'n3',dst:'n5'}]},
+  swarm:{name:'Swarm (Handoff Loop)',desc:'Peer agents bouncing back and forth without resolving',
+    nodes:[
+      {id:'n1',type:'llm',label:'agent_A',x:60,y:140,config:{model:'gpt-4o',tokens_in:1400,tokens_out:80,latency_ms:600}},
+      {id:'n2',type:'tool',label:'transfer_to_agent_B',x:250,y:140,config:{tool_name:'transfer_to_agent_B',failure:'none',failure_rate:0,success_result:'Transferred',latency_ms:40}},
+      {id:'n3',type:'llm',label:'agent_B',x:430,y:140,config:{model:'gpt-4o',tokens_in:1600,tokens_out:90,latency_ms:650}},
+      {id:'n4',type:'tool',label:'partial_work',x:580,y:60,config:{tool_name:'partial_work',failure:'empty',failure_rate:0.7,failure_result:'',success_result:'partial result',latency_ms:300}},
+      {id:'n5',type:'tool',label:'transfer_back_to_agent_A',x:430,y:240,config:{tool_name:'transfer_back_to_agent_A',failure:'none',failure_rate:0,success_result:'Back',latency_ms:40}},
+    ],
+    edges:[{src:'n1',dst:'n2'},{src:'n2',dst:'n3'},{src:'n3',dst:'n4'},{src:'n3',dst:'n5'},{src:'n5',dst:'n1'}]},
+};
+
+function simLoad(name){
+  const p=SIM_PRESETS[name];if(!p)return;
+  G=JSON.parse(JSON.stringify({nodes:p.nodes,edges:p.edges}));
+  simNC=G.nodes.length;simSel=null;simConn=null;
+  document.getElementById('sim-status').textContent='Loaded: '+p.name+' — '+p.desc;
+  simRender();
+}
+function simClear(){G={nodes:[],edges:[]};simSel=null;simConn=null;simNC=0;simRender();document.getElementById('sim-status').textContent='';}
+function simAddNode(type){
+  const id='n'+(++simNC);
+  G.nodes.push({id,type,label:type==='llm'?'LLM Call':'tool_call',
+    x:120+Math.random()*180,y:80+Math.random()*140,
+    config:type==='llm'?{model:'gpt-4o',tokens_in:1200,tokens_out:100,latency_ms:600}
+      :{tool_name:'my_tool',failure:'none',failure_rate:0,success_result:'data',latency_ms:400}});
+  simSel=id;simRender();simShowCfg(id);
+}
+function simDelNode(nid){
+  G.nodes=G.nodes.filter(n=>n.id!==nid);
+  G.edges=G.edges.filter(e=>e.src!==nid&&e.dst!==nid);
+  simSel=null;simRender();document.getElementById('sim-cfg').innerHTML='<div style="text-align:center;padding:16px 0"><div style="font-size:22px">👆</div><div style="font-size:11px;color:var(--t3);margin-top:6px">Click a node to configure</div></div>';
+}
+function simDelEdge(i){G.edges.splice(i,1);simRender();}
+
+function _isBack(src,dst){
+  if(src===dst)return true;
+  const si=G.nodes.findIndex(n=>n.id===src);
+  const di=G.nodes.findIndex(n=>n.id===dst);
+  return di<=si;
+}
+
+function simRenderEdges(){
+  const svg=document.getElementById('sim-svg');if(!svg)return;
+  const paths=G.edges.map((e,i)=>{
+    const sn=G.nodes.find(n=>n.id===e.src),dn=G.nodes.find(n=>n.id===e.dst);
+    if(!sn||!dn)return'';
+    const back=_isBack(e.src,e.dst);
+    const col=back?'#dc2626':'#f97316';
+    const mk=back?'url(#ah-red)':'url(#ah-or)';
+    let d;
+    if(e.src===e.dst){
+      const x=sn.x+NW-16,y=sn.y;
+      d=`M${x} ${y+12} C${x+65} ${y-35} ${x+65} ${y+NH+15} ${x} ${y+NH-12}`;
+    }else{
+      const sx=sn.x+NW,sy=sn.y+NH/2,dx=dn.x,dy=dn.y+NH/2;
+      const cx=Math.max(50,Math.abs(dx-sx)*0.55);
+      d=`M${sx} ${sy} C${sx+cx} ${sy} ${dx-cx} ${dy} ${dx} ${dy}`;
+    }
+    return`<path d="${d}" stroke="${col}" stroke-width="2" fill="none"
+      stroke-dasharray="${back||e.src===e.dst?'6,3':'none'}"
+      marker-end="${mk}" style="cursor:pointer" onclick="simDelEdge(${i})" title="Click to delete edge"/>`;
+  }).join('');
+  // preserve defs
+  const defs=svg.querySelector('defs');
+  svg.innerHTML='';
+  if(defs)svg.appendChild(defs);
+  svg.insertAdjacentHTML('beforeend',paths);
+}
+
+function simRenderNodes(){
+  const canvas=document.getElementById('sim-canvas');if(!canvas)return;
+  const empty=document.getElementById('sim-empty');
+  if(empty)empty.style.display=G.nodes.length?'none':'flex';
+  // remove old node divs
+  canvas.querySelectorAll('.sn').forEach(el=>el.remove());
+  G.nodes.forEach(n=>{
+    const icon=n.type==='llm'?'🤖':'🔧';
+    const isSel=simSel===n.id,isConn=simConn===n.id;
+    const div=document.createElement('div');
+    div.className=`sn ${n.type}${isSel?' sel':''}${isConn?' conn-src':''}`;
+    div.id='sn-'+n.id;
+    div.style.cssText=`left:${n.x}px;top:${n.y}px;width:${NW}px;height:${NH}px`;
+    div.innerHTML=`<div class="sn-port sn-in" data-nid="${n.id}" data-side="in"></div>
+      <div class="sn-body" data-nid="${n.id}">
+        <span class="sn-icon">${icon}</span>
+        <span class="sn-lbl">${n.label||n.type}</span>
+      </div>
+      <div class="sn-port sn-out" data-nid="${n.id}" data-side="out"></div>`;
+    canvas.appendChild(div);
+  });
+}
+
+function simRender(){simRenderNodes();simRenderEdges();}
+
+function simShowCfg(nid){
+  const node=G.nodes.find(n=>n.id===nid);
+  if(!node){document.getElementById('sim-cfg').innerHTML='';return;}
+  const cfg=node.config||{};
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span class="cfg-lbl" style="margin:0">NODE CONFIG</span>
+    <button class="btn" style="color:var(--red);border-color:#fecaca;font-size:10px;padding:3px 8px" onclick="simDelNode('${nid}')">✕ Delete</button>
+  </div>
+  <div class="cfg-f"><label class="cfg-lbl">Label</label>
+    <input type="text" class="cfg-inp" value="${node.label}" oninput="simUpd('${nid}','label',this.value)">
+  </div>`;
+  if(node.type==='llm'){
+    html+=`<div class="cfg-f"><label class="cfg-lbl">Model</label>
+      <select class="cfg-inp" onchange="simUpdCfg('${nid}','model',this.value)">
+        ${['gpt-4o','gpt-4o-mini','claude-sonnet-4-6','claude-opus-4-6'].map(m=>`<option value="${m}"${cfg.model===m?' selected':''}>${m}</option>`).join('')}
+      </select></div>
+    <div class="cfg-f"><label class="cfg-lbl">Input tokens</label>
+      <input type="number" class="cfg-inp" value="${cfg.tokens_in||1200}" oninput="simUpdCfg('${nid}','tokens_in',+this.value)"></div>
+    <div class="cfg-f"><label class="cfg-lbl">System tokens</label>
+      <input type="number" class="cfg-inp" value="${cfg.system_tokens||0}" oninput="simUpdCfg('${nid}','system_tokens',+this.value)"></div>`;
+  }else{
+    html+=`<div class="cfg-f"><label class="cfg-lbl">Tool name</label>
+      <input type="text" class="cfg-inp" value="${cfg.tool_name||node.label}" oninput="simUpdCfg('${nid}','tool_name',this.value)"></div>
+    <div class="cfg-f"><label class="cfg-lbl">Failure mode</label>
+      <select class="cfg-inp" onchange="simUpdCfg('${nid}','failure',this.value)">
+        ${[['none','None'],['timeout','Timeout / 503'],['empty','Empty result'],['error','Hard error']].map(([v,l])=>`<option value="${v}"${cfg.failure===v?' selected':''}>${l}</option>`).join('')}
+      </select></div>
+    <div class="cfg-f"><label class="cfg-lbl">Failure rate: <span id="fr-${nid}">${Math.round((cfg.failure_rate||0)*100)}%</span></label>
+      <input type="range" class="cfg-inp" min="0" max="100" value="${Math.round((cfg.failure_rate||0)*100)}"
+        oninput="simUpdCfg('${nid}','failure_rate',this.value/100);document.getElementById('fr-${nid}').textContent=this.value+'%'"></div>
+    <div class="cfg-f"><label class="cfg-lbl">Max retries (self-loop)</label>
+      <input type="number" class="cfg-inp" value="${cfg.max_retries||4}" min="1" max="10" oninput="simUpdCfg('${nid}','max_retries',+this.value)"></div>`;
+  }
+  document.getElementById('sim-cfg').innerHTML=html;
+}
+
+function simUpd(nid,key,val){const n=G.nodes.find(n=>n.id===nid);if(n)n[key]=val;simRenderNodes();}
+function simUpdCfg(nid,key,val){const n=G.nodes.find(n=>n.id===nid);if(n){if(!n.config)n.config={};n.config[key]=val;}}
+
+// ── drag + port click via event delegation ────────────────────────────────
+document.addEventListener('mousedown',e=>{
+  const body=e.target.closest('.sn-body');
+  if(body&&body.dataset.nid){
+    const nid=body.dataset.nid;
+    const wrap=document.getElementById('sim-wrap');if(!wrap)return;
+    const rect=wrap.getBoundingClientRect();
+    const node=G.nodes.find(n=>n.id===nid);if(!node)return;
+    simDrag={nid,ox:e.clientX-rect.left-node.x,oy:e.clientY-rect.top-node.y,moved:false};
+    e.preventDefault();return;
+  }
+  const port=e.target.closest('.sn-port');
+  if(port&&port.dataset.nid){
+    const {nid,side}=port.dataset;
+    if(side==='out'){
+      simConn=nid;simRenderNodes();
+      document.getElementById('sim-status').textContent='Now click any node\'s left (input) port to connect →';
+    }else if(side==='in'&&simConn){
+      if(!G.edges.some(ed=>ed.src===simConn&&ed.dst===nid))
+        G.edges.push({src:simConn,dst:nid});
+      simConn=null;document.getElementById('sim-status').textContent='';simRender();
+    }
+    e.stopPropagation();return;
+  }
+});
+
+document.addEventListener('mousemove',e=>{
+  if(!simDrag)return;
+  const wrap=document.getElementById('sim-wrap');if(!wrap)return;
+  const rect=wrap.getBoundingClientRect();
+  const node=G.nodes.find(n=>n.id===simDrag.nid);if(!node)return;
+  node.x=Math.max(0,Math.min(e.clientX-rect.left-simDrag.ox,rect.width-NW));
+  node.y=Math.max(0,Math.min(e.clientY-rect.top-simDrag.oy,rect.height-NH));
+  simDrag.moved=true;
+  const el=document.getElementById('sn-'+simDrag.nid);
+  if(el){el.style.left=node.x+'px';el.style.top=node.y+'px';}
+  simRenderEdges();
+});
+
+document.addEventListener('mouseup',e=>{
+  if(simDrag){
+    if(!simDrag.moved){simSel=simDrag.nid;simRenderNodes();simShowCfg(simDrag.nid);}
+    simDrag=null;
+  }
+});
+
+async function simRun(){
+  if(!G.nodes.length){alert('Add nodes first or load a preset.');return;}
+  const btn=document.getElementById('sim-run-btn');
+  btn.textContent='⏳ Running…';btn.disabled=true;
+  document.getElementById('sim-res').style.display='none';
+  try{
+    const r=await fetch('/simulate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nodes:G.nodes,edges:G.edges,
+        sessions:parseInt(document.getElementById('sim-sessions').value)||5,
+        model:document.getElementById('sim-model').value})});
+    const d=await r.json();
+    if(d.ok){
+      document.getElementById('sim-status').textContent=`✓ Generated ${d.spans} spans across ${d.sessions} sessions → ${d.file}`;
+      setTimeout(()=>{loadFindings();simShowRes(d);},2500);
+    }else{
+      document.getElementById('sim-status').textContent='Error: '+(d.error||'unknown');
+    }
+  }catch(ex){document.getElementById('sim-status').textContent='Request failed: '+ex.message;}
+  btn.textContent='▶ Run Simulation';btn.disabled=false;
+}
+
+function simShowRes(d){
+  const el=document.getElementById('sim-res');
+  el.style.display='block';
+  document.getElementById('sim-res-body').innerHTML=`
+    <div class="sim-res-item"><span class="sim-res-lbl">Spans generated</span><span class="sim-res-val">${d.spans}</span></div>
+    <div class="sim-res-item"><span class="sim-res-lbl">Sessions</span><span class="sim-res-val">${d.sessions}</span></div>
+    <div class="sim-res-item"><span class="sim-res-lbl">File saved</span><span class="sim-res-val" style="font-size:10px">${d.file}</span></div>
+    <div class="sim-res-item"><span class="sim-res-lbl">Status</span><span class="sim-res-val" style="color:#16a34a">Analyzed ✓</span></div>`;
+}
+
+// load retry_loop preset by default when tab opens
+document.querySelector('.tab[onclick="switchTab(\'simulate\')"]')
+  ?.addEventListener('click',()=>{if(!G.nodes.length)simLoad('retry_loop');});
 </script>
 </body>
 </html>"""
@@ -906,6 +1298,30 @@ class _Handler(BaseHTTPRequestHandler):
                 self._respond(200, "application/json", json.dumps({"ok": True, "file": str(dest)}).encode())
             except Exception as e:
                 self._respond(500, "application/json", json.dumps({"ok": False, "error": str(e)}).encode())
+        elif self.path == "/simulate":
+            length = int(self.headers.get("Content-Length", 0))
+            body_data = json.loads(self.rfile.read(length)) if length else {}
+            try:
+                from monk.simulate import simulate_workflow_otel, write_jsonl
+                import time as _t
+                nodes  = body_data.get("nodes", [])
+                edges  = body_data.get("edges", [])
+                sessions = int(body_data.get("sessions", 5))
+                model  = body_data.get("model", "gpt-4o")
+                if not nodes:
+                    self._respond(400, "application/json", b'{"ok":false,"error":"No nodes defined"}')
+                    return
+                spans = simulate_workflow_otel(nodes, edges, sessions=sessions, model=model, seed=None)
+                fname = f"sim_{int(_t.time())}.jsonl"
+                write_jsonl(spans, self.traces_dir / fname)
+                threading.Thread(target=self.rescan_fn, daemon=True).start()
+                self._respond(200, "application/json", json.dumps({
+                    "ok": True, "file": fname,
+                    "spans": len(spans), "sessions": sessions,
+                }).encode())
+            except Exception as exc:
+                self._respond(500, "application/json",
+                    json.dumps({"ok": False, "error": str(exc)}).encode())
         else:
             self._respond(404, "text/plain", b"not found")
 

@@ -218,3 +218,304 @@ def write_jsonl(records: list[dict], path: str | Path) -> Path:
         for r in records:
             f.write(json.dumps(r) + "\n")
     return out
+
+
+# ── OTEL workflow simulation ───────────────────────────────────────────────────
+import time as _time_module
+from collections import defaultdict as _defaultdict
+
+
+def _hex(n: int) -> str:
+    return "".join(random.choices("0123456789abcdef", k=n))
+
+
+# Preset workflow graph definitions ─────────────────────────────────────────
+WORKFLOW_PRESETS: dict[str, dict] = {
+    "retry_loop": {
+        "name": "Retry Loop",
+        "desc": "Same tool called 4× in a row — 503/timeout pattern",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "LLM Call", "x": 80, "y": 130,
+             "config": {"model": "gpt-4o", "tokens_in": 2100, "tokens_out": 95, "latency_ms": 800}},
+            {"id": "n2", "type": "tool", "label": "database_query", "x": 310, "y": 130,
+             "config": {"tool_name": "database_query", "failure": "timeout",
+                        "failure_rate": 0.9, "failure_result": "Connection timeout",
+                        "success_result": "[{id:1,data:'ok'}]", "latency_ms": 1200, "max_retries": 4}},
+        ],
+        "edges": [{"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n2"}],
+    },
+    "agent_loop": {
+        "name": "Agent Loop",
+        "desc": "search→rank→search→rank cycling with no progress",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "LLM Plan", "x": 60, "y": 150,
+             "config": {"model": "gpt-4o", "tokens_in": 1900, "tokens_out": 140, "latency_ms": 700}},
+            {"id": "n2", "type": "tool", "label": "search_docs", "x": 270, "y": 60,
+             "config": {"tool_name": "search_documents", "failure": "none", "failure_rate": 0,
+                        "success_result": "result_set", "latency_ms": 400}},
+            {"id": "n3", "type": "llm", "label": "LLM Rank", "x": 480, "y": 60,
+             "config": {"model": "gpt-4o", "tokens_in": 2100, "tokens_out": 120, "latency_ms": 700}},
+            {"id": "n4", "type": "tool", "label": "rank_results", "x": 480, "y": 230,
+             "config": {"tool_name": "rank_results", "failure": "none", "failure_rate": 0,
+                        "success_result": "ranked_items", "latency_ms": 300}},
+        ],
+        "edges": [
+            {"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n3"},
+            {"src": "n3", "dst": "n4"}, {"src": "n4", "dst": "n1"},
+        ],
+    },
+    "empty_return": {
+        "name": "Empty Return",
+        "desc": "Tool returns empty 80% of the time — agent retries wastefully",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "LLM Call", "x": 80, "y": 130,
+             "config": {"model": "gpt-4o", "tokens_in": 1800, "tokens_out": 110, "latency_ms": 600}},
+            {"id": "n2", "type": "tool", "label": "web_search", "x": 310, "y": 130,
+             "config": {"tool_name": "web_search", "failure": "empty", "failure_rate": 0.8,
+                        "failure_result": "", "success_result": "Search results found...",
+                        "latency_ms": 600, "max_retries": 5}},
+        ],
+        "edges": [{"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n2"}],
+    },
+    "context_bloat": {
+        "name": "Context Bloat",
+        "desc": "System prompt eating 65%+ of token budget every call",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "LLM (bloated)", "x": 80, "y": 130,
+             "config": {"model": "gpt-4o", "tokens_in": 14000, "tokens_out": 200,
+                        "system_tokens": 9100, "latency_ms": 1800}},
+            {"id": "n2", "type": "tool", "label": "lookup", "x": 310, "y": 130,
+             "config": {"tool_name": "lookup", "failure": "none", "failure_rate": 0,
+                        "success_result": "data", "latency_ms": 300}},
+        ],
+        "edges": [{"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n1"}],
+    },
+    "healthy": {
+        "name": "Healthy Agent",
+        "desc": "Clean, well-behaved agent — expect zero findings",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "LLM Call", "x": 80, "y": 130,
+             "config": {"model": "gpt-4o-mini", "tokens_in": 900, "tokens_out": 250, "latency_ms": 400}},
+            {"id": "n2", "type": "tool", "label": "fetch_data", "x": 310, "y": 70,
+             "config": {"tool_name": "fetch_data", "failure": "none", "failure_rate": 0,
+                        "success_result": "data payload", "latency_ms": 200}},
+            {"id": "n3", "type": "tool", "label": "write_output", "x": 310, "y": 200,
+             "config": {"tool_name": "write_output", "failure": "none", "failure_rate": 0,
+                        "success_result": "written", "latency_ms": 150}},
+        ],
+        "edges": [{"src": "n1", "dst": "n2"}, {"src": "n1", "dst": "n3"}],
+    },
+    "supervisor": {
+        "name": "Supervisor (Model Overkill)",
+        "desc": "gpt-4o supervisor routes to gpt-4o-mini specialist — expensive routing",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "Supervisor LLM", "x": 60, "y": 140,
+             "config": {"model": "gpt-4o", "tokens_in": 1200, "tokens_out": 60,
+                        "latency_ms": 700}},
+            {"id": "n2", "type": "tool", "label": "transfer_to_specialist", "x": 260, "y": 140,
+             "config": {"tool_name": "transfer_to_specialist", "failure": "none",
+                        "failure_rate": 0, "success_result": "Transferred to specialist",
+                        "latency_ms": 50}},
+            {"id": "n3", "type": "llm", "label": "Specialist LLM", "x": 440, "y": 140,
+             "config": {"model": "gpt-4o-mini", "tokens_in": 800, "tokens_out": 200,
+                        "latency_ms": 400}},
+            {"id": "n4", "type": "tool", "label": "compute", "x": 600, "y": 70,
+             "config": {"tool_name": "compute", "failure": "none", "failure_rate": 0,
+                        "success_result": "result", "latency_ms": 180}},
+            {"id": "n5", "type": "tool", "label": "transfer_back_to_supervisor", "x": 600, "y": 210,
+             "config": {"tool_name": "transfer_back_to_supervisor", "failure": "none",
+                        "failure_rate": 0, "success_result": "Transferred back",
+                        "latency_ms": 50}},
+        ],
+        "edges": [
+            {"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n3"},
+            {"src": "n3", "dst": "n4"}, {"src": "n3", "dst": "n5"},
+        ],
+    },
+    "swarm": {
+        "name": "Swarm (Handoff Loop)",
+        "desc": "Peer agents bouncing back and forth without resolving",
+        "nodes": [
+            {"id": "n1", "type": "llm", "label": "agent_A", "x": 60, "y": 140,
+             "config": {"model": "gpt-4o", "tokens_in": 1400, "tokens_out": 80,
+                        "latency_ms": 600}},
+            {"id": "n2", "type": "tool", "label": "transfer_to_agent_B", "x": 250, "y": 140,
+             "config": {"tool_name": "transfer_to_agent_B", "failure": "none",
+                        "failure_rate": 0, "success_result": "Transferred to agent_B",
+                        "latency_ms": 40}},
+            {"id": "n3", "type": "llm", "label": "agent_B", "x": 430, "y": 140,
+             "config": {"model": "gpt-4o", "tokens_in": 1600, "tokens_out": 90,
+                        "latency_ms": 650}},
+            {"id": "n4", "type": "tool", "label": "partial_work", "x": 580, "y": 60,
+             "config": {"tool_name": "partial_work", "failure": "empty",
+                        "failure_rate": 0.7, "failure_result": "",
+                        "success_result": "partial result", "latency_ms": 300}},
+            {"id": "n5", "type": "tool", "label": "transfer_back_to_agent_A", "x": 430, "y": 240,
+             "config": {"tool_name": "transfer_back_to_agent_A", "failure": "none",
+                        "failure_rate": 0, "success_result": "Transferred back to agent_A",
+                        "latency_ms": 40}},
+        ],
+        "edges": [
+            {"src": "n1", "dst": "n2"}, {"src": "n2", "dst": "n3"},
+            {"src": "n3", "dst": "n4"}, {"src": "n3", "dst": "n5"},
+            {"src": "n5", "dst": "n1"},   # back-edge: creates the handoff cycle
+        ],
+    },
+}
+
+
+def simulate_workflow_otel(
+    nodes: list[dict],
+    edges: list[dict],
+    sessions: int = 5,
+    model: str = "gpt-4o",
+    seed: int | None = 42,
+) -> list[dict]:
+    """
+    Execute a workflow graph definition and generate OTEL-format spans.
+
+    nodes: list of {id, type ('llm'|'tool'), label, config}
+    edges: list of {src, dst}  — self-loop edges mean "retry"
+    Returns flat list of OTEL span dicts (JSONL-compatible).
+    """
+    if seed is not None:
+        random.seed(seed)
+    if not nodes:
+        return []
+
+    node_map = {n["id"]: n for n in nodes}
+
+    # Build adjacency
+    adj: dict[str, list[str]] = _defaultdict(list)
+    in_deg: dict[str, int] = _defaultdict(int)
+    for e in edges:
+        adj[e["src"]].append(e["dst"])
+        if e["src"] != e["dst"]:
+            in_deg[e["dst"]] += 1
+
+    # Entry: first node with no incoming (non-self) edges
+    entry = next((n["id"] for n in nodes if in_deg.get(n["id"], 0) == 0), nodes[0]["id"])
+
+    # Detect back-edges: self-loops + edges to earlier nodes
+    order = {n["id"]: i for i, n in enumerate(nodes)}
+    back_edges: set[tuple[str, str]] = set()
+    for e in edges:
+        s, d = e["src"], e["dst"]
+        if s == d or order.get(d, 999) <= order.get(s, 0):
+            back_edges.add((s, d))
+
+    all_spans: list[dict] = []
+    base_ns = int(_time_module.time() * 1_000_000_000) - sessions * 60_000_000_000
+
+    for idx in range(sessions):
+        trace_id = _hex(32)
+        session_id = f"sim-{trace_id[:8]}"
+        t0 = base_ns + idx * 60_000_000_000
+        agent_sid = _hex(16)
+        sess_spans: list[dict] = []
+        vc: dict[str, int] = _defaultdict(int)
+
+        final_t, _ = _exec(
+            entry, node_map, adj, back_edges, vc,
+            trace_id, agent_sid, session_id, model, agent_sid, t0, sess_spans,
+        )
+
+        sess_spans.insert(0, {
+            "traceId": trace_id, "spanId": agent_sid, "parentSpanId": None,
+            "name": "agent.run",
+            "startTimeUnixNano": t0, "endTimeUnixNano": final_t + 50_000_000,
+            "status": {"code": "STATUS_CODE_OK"},
+            "attributes": {"session_id": session_id, "gen_ai.agent.name": "sim-agent"},
+        })
+        all_spans.extend(sess_spans)
+
+    return all_spans
+
+
+def _exec(nid, node_map, adj, back_edges, vc, trace_id, agent_sid, session_id,
+          default_model, llm_ctx, t, spans):
+    """Recursively execute a workflow node, return (final_t, llm_ctx)."""
+    node = node_map.get(nid)
+    if not node:
+        return t, llm_ctx
+
+    cfg = node.get("config", {})
+    ntype = node.get("type", "tool")
+    max_v = 5 if ntype == "tool" else 4
+    vc[nid] += 1
+    if vc[nid] > max_v:
+        return t, llm_ctx
+
+    lat = int((cfg.get("latency_ms", 500) + random.randint(-50, 250)) * 1_000_000)
+    sid = _hex(16)
+
+    if ntype == "llm":
+        m = cfg.get("model", default_model)
+        it = max(100, cfg.get("tokens_in", 1200) + random.randint(-200, 300))
+        ot = max(10, cfg.get("tokens_out", 100) + random.randint(-20, 50))
+        spt = cfg.get("system_tokens", 0)
+        spans.append({
+            "traceId": trace_id, "spanId": sid, "parentSpanId": agent_sid,
+            "name": "LLMCall",
+            "startTimeUnixNano": t, "endTimeUnixNano": t + lat,
+            "status": {"code": "STATUS_CODE_OK"},
+            "attributes": {
+                "gen_ai.request.model": m,
+                "gen_ai.usage.prompt_tokens": it,
+                "gen_ai.usage.completion_tokens": ot,
+                "llm.system_prompt_tokens": spt,
+                "session_id": session_id,
+            },
+        })
+        t += lat
+        cur_ctx = sid  # tools after this LLM become its children
+        for nbr in adj.get(nid, []):
+            if (nid, nbr) not in back_edges:
+                t, cur_ctx = _exec(nbr, node_map, adj, back_edges, vc,
+                                   trace_id, agent_sid, session_id, default_model, cur_ctx, t, spans)
+        for nbr in adj.get(nid, []):
+            if (nid, nbr) in back_edges and vc.get(nbr, 0) < 3:
+                t, cur_ctx = _exec(nbr, node_map, adj, back_edges, vc,
+                                   trace_id, agent_sid, session_id, default_model, cur_ctx, t, spans)
+        return t, cur_ctx
+
+    # tool node
+    tool_name = cfg.get("tool_name", node.get("label", "tool"))
+    fail_mode = cfg.get("failure", "none")
+    fail_rate = float(cfg.get("failure_rate", 0))
+    has_retry = (nid, nid) in back_edges
+    iters = int(cfg.get("max_retries", 4)) if has_retry else 1
+
+    for i in range(iters):
+        is_last = i == iters - 1
+        is_fail = not is_last and fail_mode != "none" and random.random() < fail_rate
+        iter_end = t + lat + random.randint(0, 80_000_000)
+
+        if fail_mode == "empty":
+            result = "" if is_fail else cfg.get("success_result", "data")
+            code = "STATUS_CODE_OK"
+        else:
+            result = cfg.get("failure_result", "Error") if is_fail else cfg.get("success_result", "data")
+            code = "STATUS_CODE_ERROR" if is_fail else "STATUS_CODE_OK"
+
+        spans.append({
+            "traceId": trace_id, "spanId": _hex(16), "parentSpanId": llm_ctx,
+            "name": tool_name,
+            "startTimeUnixNano": t, "endTimeUnixNano": iter_end,
+            "status": {"code": code},
+            "attributes": {
+                "tool.name": tool_name, "tool.result": result,
+                "tool_result": result, "session_id": session_id,
+            },
+        })
+        t = iter_end + 5_000_000
+
+    for nbr in adj.get(nid, []):
+        if nbr != nid and (nid, nbr) not in back_edges:
+            t, llm_ctx = _exec(nbr, node_map, adj, back_edges, vc,
+                               trace_id, agent_sid, session_id, default_model, llm_ctx, t, spans)
+    for nbr in adj.get(nid, []):
+        if nbr != nid and (nid, nbr) in back_edges and vc.get(nbr, 0) < 4:
+            t, llm_ctx = _exec(nbr, node_map, adj, back_edges, vc,
+                               trace_id, agent_sid, session_id, default_model, llm_ctx, t, spans)
+    return t, llm_ctx

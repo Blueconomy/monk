@@ -68,7 +68,7 @@ Evaluated on **8 real-world agentic trace datasets** — including PatronusAI's 
 | Version | Precision | Recall | F1 | Detectors |
 |---|---|---|---|---|
 | v0.1 | 84.85% | 84.85% | 84.85% | 5 |
-| **v0.4.6 (current)** | **100%** | **100%** | **100%** | **14** |
+| **v0.4.8 (current)** | **100%** | **100%** | **100%** | **15** |
 
 Zero false positives. All 33 error-containing TRAIL traces caught.  
 Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BENCHMARK.md)
@@ -77,9 +77,9 @@ Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BE
 
 ## What monk detects
 
-14 detectors. All deterministic — no LLM-as-judge, no external API calls.
+15 detectors. All deterministic — no LLM-as-judge, no external API calls.
 
-**Trace detectors** — work on OpenAI, Anthropic, LangSmith, or raw JSONL:
+**Trace detectors** — work on OpenAI, Anthropic, LangGraph, LangSmith, or raw JSONL:
 
 | Detector | What it finds |
 |---|---|
@@ -88,6 +88,7 @@ Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BE
 | `model_overkill` | Expensive model doing formatting or classification |
 | `context_bloat` | System prompt >55% of budget, or unbounded history growth |
 | `agent_loop` | Agent cycling A→B→A→B without progress |
+| `handoff_loop` | Multi-agent transfer cycling (Supervisor/Swarm A↔B bouncing) |
 | `text_io` | Low output compression, unbounded input growth |
 
 **Span detectors** — require OpenTelemetry traces:
@@ -186,7 +187,9 @@ Generate synthetic trace data with specific failure patterns. Useful for:
 - Demoing cost leaks to stakeholders with realistic numbers
 - Validating that a code change actually eliminated a pattern
 
-Available patterns: `retry_loop`, `empty_return`, `agent_loop`, `context_bloat`, `model_overkill`, `healthy`
+Available patterns: `retry_loop`, `empty_return`, `agent_loop`, `context_bloat`, `model_overkill`, `healthy`, `supervisor`, `swarm`
+
+The `supervisor` preset models a LangGraph Supervisor routing expensive gpt-4o to a gpt-4o-mini specialist — surfaces `model_overkill`. The `swarm` preset models peer agents bouncing `transfer_to_*` without resolving — surfaces `handoff_loop`.
 
 The `healthy` pattern generates clean sessions with no failures — verifying monk produces zero findings on well-behaved agents.
 
@@ -194,10 +197,19 @@ The `healthy` pattern generates clean sessions with no failures — verifying mo
 
 ## Trace format
 
-monk auto-detects OpenAI, Anthropic, LangSmith, and OpenTelemetry formats. For custom logs, any JSONL with these fields works:
+monk auto-detects OpenAI, Anthropic, LangGraph, LangSmith, and OpenTelemetry formats. For custom logs, any JSONL with these fields works:
 
 ```jsonl
 {"session_id": "abc123", "model": "gpt-4o", "input_tokens": 1200, "output_tokens": 80, "tool_name": "web_search", "tool_result": "..."}
+```
+
+**LangGraph** — save your `app.invoke()` response directly to JSONL. monk extracts one TraceCall per AIMessage with `usage_metadata`, preserving agent names and `transfer_to_*` handoff calls:
+
+```python
+import json
+result = app.invoke({"messages": [...]})
+with open("traces/session.jsonl", "a") as f:
+    f.write(json.dumps(result) + "\n")
 ```
 
 For full span-level analysis, export OpenTelemetry traces — monk parses both OTLP proto-JSON and flat JSONL span formats.

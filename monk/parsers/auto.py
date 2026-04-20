@@ -72,6 +72,9 @@ def parse_traces(source: str | Path) -> list[TraceCall]:
         call = _parse_record(rec, session_counters)
         if call:
             calls.append(call)
+            # LangGraph responses embed multiple AI turns — drain them
+            for extra in rec.pop("_lg_extra", []):
+                calls.append(extra)
 
     return calls
 
@@ -105,6 +108,8 @@ def _load_records(text: str) -> list[dict]:
 
 def _parse_record(rec: dict, session_counters: dict[str, int]) -> TraceCall | None:
     """Dispatch to the right parser based on record shape."""
+    if _is_langgraph_format(rec):
+        return _parse_langgraph_record(rec, session_counters)
     if _is_openai_format(rec):
         return _parse_openai(rec, session_counters)
     if _is_anthropic_format(rec):
@@ -112,6 +117,17 @@ def _parse_record(rec: dict, session_counters: dict[str, int]) -> TraceCall | No
     if _is_langsmith_format(rec):
         return _parse_langsmith(rec, session_counters)
     return _parse_generic(rec, session_counters)
+
+
+def _is_langgraph_format(rec: dict) -> bool:
+    """LangGraph invoke response: {"messages": [...]} where AIMessages have usage_metadata."""
+    msgs = rec.get("messages")
+    if not isinstance(msgs, list) or not msgs:
+        return False
+    return any(
+        isinstance(m, dict) and "usage_metadata" in m
+        for m in msgs
+    )
 
 
 def _is_openai_format(rec: dict) -> bool:
@@ -130,6 +146,92 @@ def _is_langsmith_format(rec: dict) -> bool:
 # ──────────────────────────────────────────────
 # Format-specific parsers
 # ──────────────────────────────────────────────
+
+def _parse_langgraph_record(rec: dict, counters: dict) -> TraceCall | None:
+    """
+    Parse a LangGraph invoke() response into the *first* TraceCall we find.
+    Because one LangGraph response contains multiple AI turns, we inject all of
+    them into the counter and return only the first so the caller loop stays
+    one-record → one-call.  Extra calls are stashed in rec['_lg_extra'] for
+    the outer loop to consume if present (handled in parse_traces below).
+    """
+    messages = rec.get("messages", [])
+    session = str(
+        rec.get("session_id") or rec.get("thread_id") or rec.get("configurable", {}).get("thread_id") or "langgraph-default"
+    )
+
+    # Build tool-result lookup: tool_call_id → content
+    tool_results: dict[str, str] = {}
+    for m in messages:
+        if not isinstance(m, dict):
+            continue
+        mtype = (m.get("type") or m.get("__class__", "")).lower()
+        if mtype in ("tool", "toolmessage"):
+            tid = m.get("tool_call_id", "")
+            content = m.get("content", "")
+            if isinstance(content, list):
+                content = " ".join(str(b.get("text", b)) for b in content if isinstance(b, dict))
+            tool_results[tid] = str(content)
+
+    calls: list[TraceCall] = []
+    for m in messages:
+        if not isinstance(m, dict):
+            continue
+        mtype = (m.get("type") or m.get("__class__", "")).lower()
+        if mtype not in ("ai", "aimessage"):
+            continue
+        meta = m.get("usage_metadata")
+        if not meta:
+            continue
+
+        input_tok = int(meta.get("input_tokens", 0))
+        output_tok = int(meta.get("output_tokens", 0))
+
+        # System prompt tokens live in response_metadata if available
+        resp_meta = m.get("response_metadata", {}) or {}
+        system_tok = int(resp_meta.get("system_prompt_tokens", 0))
+
+        # Extract tool calls + resolve results
+        raw_tcs = m.get("tool_calls") or []
+        tool_calls: list[ToolCall] = []
+        for tc in raw_tcs:
+            name = tc.get("name", "unknown")
+            args = tc.get("args", tc.get("arguments", {}))
+            tc_id = tc.get("id", "")
+            result = tool_results.get(tc_id, "")
+            tool_calls.append(ToolCall(
+                name=name,
+                arguments=json.dumps(args) if isinstance(args, dict) else str(args),
+                result=result,
+            ))
+
+        # Derive model — LangGraph stores it in response_metadata
+        model = (
+            resp_meta.get("model_name")
+            or resp_meta.get("model_id")
+            or m.get("name", "langgraph-agent")  # agent name as fallback
+            or "unknown"
+        )
+
+        idx = _next_idx(counters, session)
+        calls.append(TraceCall(
+            session_id=session,
+            call_index=idx,
+            model=str(model),
+            input_tokens=input_tok,
+            output_tokens=output_tok,
+            system_prompt_tokens=system_tok,
+            tool_calls=tool_calls,
+            raw=m,
+        ))
+
+    if not calls:
+        return None
+    # Stash extras so parse_traces can surface them
+    if len(calls) > 1:
+        rec["_lg_extra"] = calls[1:]
+    return calls[0]
+
 
 def _parse_openai(rec: dict, counters: dict) -> TraceCall:
     session = str(rec.get("session_id") or rec.get("thread_id") or "default")
