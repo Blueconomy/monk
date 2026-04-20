@@ -263,10 +263,20 @@ def parse_usage_csv(
       platform  : detected platform string
     """
     source = str(source)
-    if Path(source).exists():
+    # Distinguish a file path from raw CSV text.
+    # Path(source).exists() throws [Errno 63] on long strings (i.e. raw CSV text).
+    _is_file = False
+    try:
+        _is_file = len(source) < 4096 and Path(source).exists()
+    except OSError:
+        pass
+
+    if _is_file:
         text = Path(source).read_text(encoding="utf-8-sig")  # handles BOM
     else:
         text = source
+        if text.startswith("\ufeff"):   # strip UTF-8 BOM if present in raw text
+            text = text[1:]
 
     if not text.strip():
         raise FormatError("File is empty.")
