@@ -1,6 +1,6 @@
 # 🕵️ monk — Project Intelligence
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-04-20
 
 ---
 
@@ -8,7 +8,7 @@
 
 **monk** is an agentic AI workflow blind spot detector — a Python CLI tool (pip: `monk-ai`) that analyzes trace logs from AI agent executions to find hidden cost leaks and inefficiencies.
 
-- **Status:** v0.2.0-dev (Alpha, Techstars '25)
+- **Status:** v0.4.6 (Alpha, Techstars '25)
 - **Owner/Org:** Blueconomy AI
 - **License:** MIT
 - **Repository:** https://github.com/Blueconomy/monk
@@ -204,10 +204,17 @@ Dev:
 
 ## Next Priorities
 
-- [ ] Commit all pending changes (clear git index.lock first): `rm .git/index.lock && git add -A && git commit -m "✨ v0.2.0: output-level detectors, bug fixes, 100% TRAIL F1"`
-- [ ] Consider real-time mode (OTEL SDK integration) as next major feature (v0.2 roadmap item)
+- [ ] Commit pending changes and push to GitHub:
+  ```bash
+  cd ~/Documents/ClaudeProject/monk
+  rm -f .git/index.lock .git/HEAD.lock
+  git add monk/__init__.py monk/cli.py monk/serve.py pyproject.toml CLAUDE.md tests/fixtures/demo_traces.jsonl
+  git commit -m "✨ v0.4.6: white+orange dashboard, quickstart command, demo data"
+  git push https://baman95:GITHUB_TOKEN@github.com/Blueconomy/monk.git main
+  ```
+- [ ] Consider real-time mode (OTEL SDK integration) as next major feature
 - [ ] Consider adding confidence scores to findings (high-confidence vs heuristic-only)
-- [ ] Explore web dashboard / Slack alerts for real-time monitoring
+- [ ] Explore Slack / PagerDuty alerts for real-time monitoring
 
 ---
 

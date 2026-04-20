@@ -281,173 +281,190 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>monk — Agent Cost Control Room</title>
+<title>monk — Agent Cost Monitor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0c0c0c;--s1:#111;--s2:#161616;--s3:#1c1c1c;
-  --b1:#1f1f1f;--b2:#2a2a2a;--b3:#333;
-  --t1:#fff;--t2:#a0a0a0;--t3:#555;--t4:#333;
-  --or:#f97316;--or2:#f9731612;--or3:#f9731628;--or4:#f9731645;
-  --red:#ff4444;--grn:#22c55e;--blue:#60a5fa;
+  --bg:#f8f8f6;--s1:#fff;--s2:#fafaf8;--s3:#f4f3f0;
+  --b1:#e8e6e1;--b2:#d4d0c8;--b3:#c0bbb0;
+  --t1:#1a1814;--t2:#4a4540;--t3:#8a8078;--t4:#b0a898;
+  --or:#f97316;--or2:#fff7ed;--or3:#fed7aa;--or4:#fdba74;
+  --red:#dc2626;--red2:#fef2f2;--grn:#16a34a;--grn2:#f0fdf4;--blue:#2563eb;
   --mono:'JetBrains Mono',monospace;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.05);
 }
 html{font-size:14px}
 body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
 
 /* NAV */
-nav{position:sticky;top:0;z-index:100;background:rgba(12,12,12,.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--b1);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
-.nav-l{display:flex;align-items:center;gap:12px}
-.logo{font-size:15px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
-.logo-icon{font-size:18px}
-.logo-name span{color:var(--or)}
-.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;border:1px solid var(--b2);color:var(--t3);font-family:var(--mono);letter-spacing:.3px}
-.nav-r{display:flex;align-items:center;gap:12px}
-#live-badge{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 11px;border-radius:99px;border:1px solid var(--b2);color:var(--t3);font-family:var(--mono);transition:all .3s}
-#live-badge.live{color:var(--grn);border-color:#22c55e28;background:#22c55e06}
-#live-badge.error{color:var(--red);border-color:#ff444428}
-.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
-#live-badge.live .badge-dot{box-shadow:0 0 5px var(--grn);animation:pulse 2s infinite}
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--b1);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;box-shadow:0 1px 0 var(--b1)}
+.nav-l{display:flex;align-items:center;gap:16px}
+.logo{font-size:16px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:9px;color:var(--t1)}
+.logo-k{color:var(--or)}
+.version-pill{font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--or2);color:var(--or);border:1px solid var(--or3);font-family:var(--mono)}
+.nav-r{display:flex;align-items:center;gap:10px}
+#live-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:99px;font-family:var(--mono);font-weight:600;transition:all .3s;background:var(--s3);color:var(--t3);border:1px solid var(--b1)}
+#live-badge.live{color:var(--grn);background:var(--grn2);border-color:#bbf7d0}
+#live-badge.error{color:var(--red);background:var(--red2);border-color:#fecaca}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+#live-badge.live .badge-dot{animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .ts{font-size:11px;color:var(--t4);font-family:var(--mono)}
-.nav-btn{font-size:11px;padding:4px 11px;border-radius:6px;border:1px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;font-family:var(--mono);transition:all .15s;display:flex;align-items:center;gap:5px}
-.nav-btn:hover{border-color:var(--or3);color:var(--or)}
-.nav-divider{width:1px;height:20px;background:var(--b2)}
+.nav-sep{width:1px;height:22px;background:var(--b1)}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 14px;border-radius:7px;border:1px solid var(--b2);background:var(--s1);color:var(--t2);cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{border-color:var(--or4);color:var(--or);background:var(--or2)}
+.btn-primary{background:var(--or);color:#fff;border-color:var(--or);font-weight:600}
+.btn-primary:hover{background:#ea6c0a;border-color:#ea6c0a;color:#fff}
+#nav-calls{font-size:11px;color:var(--t3);font-family:var(--mono)}
 
 /* TABS */
-.tabs{display:flex;gap:1px;background:var(--b1);border-bottom:1px solid var(--b1);padding:0 28px}
-.tab{font-size:12px;font-weight:500;padding:10px 16px;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.2px}
-.tab:hover{color:var(--t2)}
-.tab.active{color:var(--or);border-bottom-color:var(--or)}
+.tabs{display:flex;background:var(--s1);border-bottom:1px solid var(--b1);padding:0 32px;gap:0}
+.tab{font-size:13px;font-weight:500;padding:12px 18px;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;transition:all .15s;user-select:none}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--or);border-bottom-color:var(--or);font-weight:600}
 
 /* PAGE */
-.page{max-width:1440px;margin:0 auto;padding:24px 28px 60px}
+.page{max-width:1400px;margin:0 auto;padding:28px 32px 80px}
 .tab-pane{display:none}.tab-pane.active{display:block}
 
-/* SECTION */
-.sec{margin-bottom:24px}
-.sec-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.sec-label::after{content:'';flex:1;height:1px;background:var(--b1)}
+/* SECTION HEADER */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sh-title{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3)}
 
-/* KPIs */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin-bottom:20px}
-.kpi{background:var(--s1);padding:22px 20px;position:relative;transition:background .18s;cursor:default}
-.kpi:hover{background:var(--s2)}
-.kpi-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
-.kpi-val{font-size:34px;font-weight:800;letter-spacing:-1.5px;line-height:1;margin-bottom:5px;transition:all .4s}
-.kpi-val.or{color:var(--or)}
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);transition:box-shadow .2s,transform .2s;cursor:default;position:relative;overflow:hidden}
+.kpi:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--or);opacity:0;transition:opacity .2s}
+.kpi:hover::before{opacity:1}
+.kpi-label{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:10px;letter-spacing:.3px}
+.kpi-val{font-size:32px;font-weight:800;letter-spacing:-1.2px;line-height:1;color:var(--t1);margin-bottom:6px}
+.kpi-val.orange{color:var(--or)}
 .kpi-val.red{color:var(--red)}
-.kpi-sub{font-size:11px;color:var(--t3);line-height:1.5}
-.kpi::after{content:'';position:absolute;bottom:0;left:20px;right:20px;height:1px;background:var(--or);transform:scaleX(0);transform-origin:left;transition:transform .25s}
-.kpi:hover::after{transform:scaleX(1)}
+.kpi-sub{font-size:11px;color:var(--t4);line-height:1.5}
+.kpi.highlight{border-color:var(--or3);background:var(--or2)}
+.kpi.highlight .kpi-label{color:var(--or)}
+.kpi.highlight::before{opacity:1}
 
-/* GRIDS */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
-.g13{display:grid;grid-template-columns:1fr 3fr;gap:14px;margin-bottom:14px}
-.g31{display:grid;grid-template-columns:3fr 1fr;gap:14px;margin-bottom:14px}
-.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+/* SEV ROW */
+.sev-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.sev-card{border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid}
+.sev-card.high{background:#fef2f2;border-color:#fecaca}
+.sev-card.med{background:#fff7ed;border-color:var(--or3)}
+.sev-card.low{background:#f0fdf4;border-color:#bbf7d0}
+.sev-num{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
+.sev-card.high .sev-num{color:var(--red)}
+.sev-card.med .sev-num{color:var(--or)}
+.sev-card.low .sev-num{color:var(--grn)}
+.sev-lbl{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.3px}
+.sev-desc{font-size:10px;color:var(--t4);margin-top:2px}
 
-/* PANEL */
-.panel{background:var(--s1);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
-.ph{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.ph-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--t3)}
-.ph-right{display:flex;align-items:center;gap:8px}
-.pb{padding:0 18px 18px}
-.pb-full{padding:0}
+/* GRID LAYOUTS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g31{display:grid;grid-template-columns:3fr 1fr;gap:16px;margin-bottom:16px}
+.g13{display:grid;grid-template-columns:1fr 3fr;gap:16px;margin-bottom:16px}
 
-/* DATASET CARDS */
-.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-.ds-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;transition:border-color .15s,background .15s}
-.ds-card:hover{border-color:var(--b3);background:var(--s3)}
-.ds-card.loaded{border-color:var(--or3)}
-.ds-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
-.ds-name{font-size:13px;font-weight:600;color:var(--t1)}
-.ds-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;font-family:var(--mono);letter-spacing:.3px}
-.ds-status.loaded{background:#22c55e15;color:var(--grn);border:1px solid #22c55e28}
-.ds-status.available{background:var(--b1);color:var(--t3);border:1px solid var(--b2)}
-.ds-status.downloading{background:#f9731612;color:var(--or);border:1px solid var(--or3);animation:blink 1.2s infinite}
-.ds-status.error{background:#ff444412;color:var(--red);border:1px solid #ff444428}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-.ds-desc{font-size:12px;color:var(--t3);margin-bottom:10px;line-height:1.5}
-.ds-meta{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.ds-tag{font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:4px;color:var(--t3);background:var(--b1);border:1px solid var(--b2)}
-.ds-tag.otel{color:var(--blue);background:#3b82f610;border-color:#3b82f628}
-.ds-bar-wrap{margin-bottom:12px}
-.ds-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:4px;font-family:var(--mono)}
-.ds-bar-track{height:2px;background:var(--b2);border-radius:1px;overflow:hidden}
-.ds-bar-fill{height:100%;border-radius:1px;background:var(--or);transition:width .6s}
-.ds-btn{width:100%;padding:7px;border-radius:7px;border:1px solid var(--b2);background:transparent;color:var(--t2);font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s}
-.ds-btn:hover:not(:disabled){border-color:var(--or3);color:var(--or);background:var(--or2)}
-.ds-btn:disabled{opacity:.4;cursor:not-allowed}
-.ds-btn.loaded{border-color:#22c55e28;color:var(--grn);background:#22c55e08}
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.card-head{padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b1)}
+.card-title{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:.2px}
+.card-sub{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.card-body{padding:16px 18px}
+.card-body.flush{padding:0}
 
-/* FINDINGS STREAM */
-.stream{max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
-.stream::-webkit-scrollbar{width:3px}
-.stream::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
-.stream-item{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 13px;border-left:2px solid var(--b2);cursor:default;transition:background .1s}
-.stream-item:hover{background:var(--s3)}
-.stream-item.high{border-left-color:var(--red)}
-.stream-item.medium{border-left-color:var(--or)}
-.stream-item.low{border-left-color:var(--grn)}
-.si-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.si-det{font-family:var(--mono);font-size:11px;color:var(--or)}
-.si-sev{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
-.si-title{font-size:12px;color:var(--t2);line-height:1.45;margin-bottom:3px}
-.si-fix{font-size:11px;color:var(--t3);line-height:1.4}
-.si-fix::before{content:'→ ';color:var(--or)}
+/* FINDINGS LIST */
+.f-list{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto}
+.f-list::-webkit-scrollbar{width:4px}
+.f-list::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.f-item{padding:12px 14px;border-radius:8px;border:1px solid var(--b1);background:var(--s2);border-left:3px solid var(--b2);transition:background .12s,box-shadow .12s;cursor:default}
+.f-item:hover{background:var(--s1);box-shadow:var(--shadow)}
+.f-item.high{border-left-color:var(--red)}
+.f-item.medium{border-left-color:var(--or)}
+.f-item.low{border-left-color:var(--grn)}
+.f-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.f-det{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--or2);color:var(--or);border:1px solid var(--or3)}
+.f-sev{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.3px}
+.f-sev.high{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+.f-sev.medium{background:#fff7ed;color:var(--or);border:1px solid var(--or3)}
+.f-sev.low{background:#f0fdf4;color:var(--grn);border:1px solid #bbf7d0}
+.f-waste{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--or)}
+.f-title{font-size:12px;color:var(--t1);font-weight:500;margin-bottom:3px;line-height:1.45}
+.f-fix{font-size:11px;color:var(--t3);line-height:1.45}
+.f-fix::before{content:'Fix → ';color:var(--or);font-weight:600}
+.f-detail{font-size:11px;color:var(--t3);margin-top:4px;line-height:1.5}
+.f-sessions{font-family:var(--mono);font-size:10px;color:var(--t4);margin-top:5px}
 
 /* WASTE BARS */
-.wrow{margin-bottom:11px}
-.wrow:last-child{margin-bottom:0}
-.wrow-top{display:flex;justify-content:space-between;margin-bottom:4px}
-.wrow-name{font-family:var(--mono);font-size:11px;color:var(--t2)}
-.wrow-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--or)}
-.wrow-val.dim{color:var(--t3)}
-.wtrack{height:2px;background:var(--b2);border-radius:1px;overflow:hidden}
-.wfill{height:100%;border-radius:1px;background:var(--or);transition:width .6s ease}
+.w-list{display:flex;flex-direction:column;gap:12px}
+.w-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.w-name{font-size:12px;color:var(--t2);font-weight:500}
+.w-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--or)}
+.w-val.dim{color:var(--t4)}
+.w-track{height:6px;background:var(--b1);border-radius:3px;overflow:hidden}
+.w-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--or4),var(--or));transition:width .7s ease}
 
 /* TABLE */
-.tbl{overflow-x:auto}
+.tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-thead th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);padding:0 16px 10px;text-align:left;border-bottom:1px solid var(--b1)}
-thead th:first-child{padding-left:18px}
-thead th:last-child{padding-right:18px}
+thead th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);padding:10px 16px;text-align:left;border-bottom:2px solid var(--b1);background:var(--s2)}
+thead th:first-child{padding-left:20px}
+thead th:last-child{padding-right:20px}
 tbody tr{border-bottom:1px solid var(--b1);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:var(--s2)}
-tbody td{padding:11px 16px;font-size:12px;color:var(--t2);vertical-align:middle}
-tbody td:first-child{padding-left:18px}
-tbody td:last-child{padding-right:18px}
-.chip{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
-.chip-or{background:var(--or2);color:var(--or);border:1px solid var(--or3)}
-.chip-w{background:#fff06;color:#555;border:1px solid var(--b2)}
-.sev-badge{font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
-.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.sev-h{color:var(--red)}.sev-h .dot{background:var(--red);box-shadow:0 0 4px var(--red)}
-.sev-m{color:var(--or)}.sev-m .dot{background:var(--or);box-shadow:0 0 4px var(--or)}
-.mn{font-family:var(--mono);font-size:11px}
+tbody tr:hover{background:var(--or2)}
+tbody td{padding:12px 16px;font-size:12px;color:var(--t2);vertical-align:middle}
+tbody td:first-child{padding-left:20px}
+tbody td:last-child{padding-right:20px}
+.chip{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--or2);color:var(--or);border:1px solid var(--or3)}
+.sev-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sev-h{color:var(--red)}.sev-h .dot{background:var(--red)}
+.sev-m{color:var(--or)}.sev-m .dot{background:var(--or)}
+.sev-l{color:var(--grn)}.sev-l .dot{background:var(--grn)}
+.mn{font-family:var(--mono);font-size:11px;font-weight:600}
 
-/* SEV TILES */
-.sev-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.sev-tile{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px;text-align:center}
-.st-val{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.st-lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-top:3px}
+/* DATASET CARDS */
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.ds-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:16px 18px;transition:all .15s;box-shadow:var(--shadow)}
+.ds-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.ds-card.loaded{border-color:var(--or3);background:var(--or2)}
+.ds-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.ds-name{font-size:13px;font-weight:700;color:var(--t1)}
+.ds-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;font-family:var(--mono)}
+.ds-badge.loaded{background:#dcfce7;color:var(--grn);border:1px solid #bbf7d0}
+.ds-badge.available{background:var(--s3);color:var(--t3);border:1px solid var(--b1)}
+.ds-badge.downloading{background:#fff7ed;color:var(--or);border:1px solid var(--or3);animation:blink 1s infinite}
+.ds-badge.error{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.ds-desc{font-size:12px;color:var(--t3);margin-bottom:10px;line-height:1.5}
+.ds-meta{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.ds-tag{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;color:var(--t3);background:var(--s3);border:1px solid var(--b1)}
+.ds-tag.otel{color:var(--blue);background:#eff6ff;border-color:#bfdbfe}
+.ds-btn{width:100%;padding:8px 12px;border-radius:7px;border:1px solid var(--b2);background:var(--s1);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit}
+.ds-btn:hover:not(:disabled){border-color:var(--or);color:var(--or);background:var(--or2)}
+.ds-btn:disabled{opacity:.45;cursor:not-allowed}
+.ds-btn.loaded{border-color:#bbf7d0;color:var(--grn);background:#dcfce7}
 
 /* EMPTY STATE */
-.empty{text-align:center;padding:40px 20px;color:var(--t3)}
-.empty-icon{font-size:32px;margin-bottom:12px}
-.empty-text{font-size:13px;line-height:1.6}
+.empty{text-align:center;padding:48px 24px;color:var(--t3)}
+.empty-icon{font-size:36px;margin-bottom:14px}
+.empty-title{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:6px}
+.empty-body{font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:18px}
 
 /* FOOTER */
-footer{border-top:1px solid var(--b1);padding:18px 28px;display:flex;align-items:center;justify-content:space-between}
+footer{border-top:1px solid var(--b1);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;background:var(--s1)}
 footer .left{font-size:11px;color:var(--t3)}
-footer .right{display:flex;gap:16px}
+footer .right{display:flex;gap:18px}
 footer a{font-size:11px;color:var(--t3);text-decoration:none;transition:color .15s}
 footer a:hover{color:var(--or)}
+
+/* SCAN BANNER */
+#scan-banner{display:none;align-items:center;gap:12px;padding:10px 32px;background:var(--or2);border-bottom:1px solid var(--or3)}
+#scan-banner.show{display:flex}
+.scan-text{font-size:12px;color:var(--or);font-weight:500}
 </style>
 </head>
 <body>
@@ -455,20 +472,23 @@ footer a:hover{color:var(--or)}
 <!-- NAV -->
 <nav>
   <div class="nav-l">
-    <div class="logo">
-      <span class="logo-icon">🕵️</span>
-      <span class="logo-name">mon<span>k</span></span>
-    </div>
-    <div class="pill">v__VERSION__</div>
-    <div class="pill" id="nav-files">— files</div>
+    <div class="logo">🕵️ mon<span class="logo-k">k</span></div>
+    <span class="version-pill">v__VERSION__</span>
   </div>
   <div class="nav-r">
     <span class="ts" id="ts"></span>
-    <div class="nav-divider"></div>
-    <button class="nav-btn" onclick="loadAll()">↻ Refresh</button>
+    <span id="nav-calls"></span>
+    <div class="nav-sep"></div>
+    <button class="btn" onclick="triggerScan()">↻ Scan now</button>
+    <button class="btn btn-primary" onclick="loadSample()" id="sample-btn">⚡ Load sample</button>
     <div id="live-badge"><div class="badge-dot"></div><span id="badge-text">connecting</span></div>
   </div>
 </nav>
+
+<!-- SCAN BANNER -->
+<div id="scan-banner">
+  <span class="scan-text">⚡ Scanning traces folder…</span>
+</div>
 
 <!-- TABS -->
 <div class="tabs">
@@ -482,68 +502,95 @@ footer a:hover{color:var(--or)}
   <!-- ══ OVERVIEW ══════════════════════════════════════════════════════════ -->
   <div class="tab-pane active" id="tab-overview">
 
-    <div class="sec">
-      <div class="kpis">
-        <div class="kpi">
-          <div class="kpi-label">Total Findings</div>
-          <div class="kpi-val" id="k-total">—</div>
-          <div class="kpi-sub" id="k-total-sub">—</div>
+    <!-- KPI CARDS -->
+    <div class="kpi-row">
+      <div class="kpi highlight">
+        <div class="kpi-label">Waste / Day</div>
+        <div class="kpi-val orange" id="k-day">—</div>
+        <div class="kpi-sub" id="k-day-sub">estimated avoidable spend</div>
+      </div>
+      <div class="kpi highlight">
+        <div class="kpi-label">Projected / Month</div>
+        <div class="kpi-val orange" id="k-month">—</div>
+        <div class="kpi-sub">if patterns continue unchanged</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Total Findings</div>
+        <div class="kpi-val" id="k-total">—</div>
+        <div class="kpi-sub" id="k-total-sub">across all detectors</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">LLM Calls Analyzed</div>
+        <div class="kpi-val" id="k-calls">—</div>
+        <div class="kpi-sub" id="k-calls-sub">sessions analyzed</div>
+      </div>
+    </div>
+
+    <!-- SEVERITY ROW -->
+    <div class="sev-row">
+      <div class="sev-card high">
+        <div>
+          <div class="sev-num" id="s-h">—</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Waste / Day</div>
-          <div class="kpi-val or" id="k-day">—</div>
-          <div class="kpi-sub" id="k-day-sub">estimated avoidable spend</div>
+        <div>
+          <div class="sev-lbl">High Severity</div>
+          <div class="sev-desc">Fix immediately</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Projected / Month</div>
-          <div class="kpi-val or" id="k-month">—</div>
-          <div class="kpi-sub">all addressable with fixes</div>
+      </div>
+      <div class="sev-card med">
+        <div>
+          <div class="sev-num" id="s-m">—</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">LLM Calls</div>
-          <div class="kpi-val" id="k-calls">—</div>
-          <div class="kpi-sub" id="k-calls-sub">across all trace files</div>
+        <div>
+          <div class="sev-lbl">Medium Severity</div>
+          <div class="sev-desc">Address this sprint</div>
+        </div>
+      </div>
+      <div class="sev-card low">
+        <div>
+          <div class="sev-num" id="s-l">—</div>
+        </div>
+        <div>
+          <div class="sev-lbl">Low Severity</div>
+          <div class="sev-desc">Backlog candidates</div>
         </div>
       </div>
     </div>
 
-    <div class="g2">
-      <!-- Detector bar -->
-      <div class="panel">
-        <div class="ph"><div class="ph-title">Findings by Detector</div></div>
-        <div class="pb"><canvas id="det-chart" height="270"></canvas></div>
+    <!-- CHARTS + FINDINGS FEED -->
+    <div class="g31">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Cost Waste by Detector</span>
+          <span class="card-sub" id="waste-total-label"></span>
+        </div>
+        <div class="card-body">
+          <div class="w-list" id="waste-bars"></div>
+        </div>
       </div>
-      <!-- Severity + donut -->
-      <div class="panel">
-        <div class="ph"><div class="ph-title">Severity</div></div>
-        <div class="pb">
-          <div class="sev-tiles">
-            <div class="sev-tile"><div class="st-val" id="s-h" style="color:var(--red)">—</div><div class="st-lbl">High</div></div>
-            <div class="sev-tile"><div class="st-val" id="s-m" style="color:var(--or)">—</div><div class="st-lbl">Medium</div></div>
-            <div class="sev-tile"><div class="st-val" id="s-l" style="color:var(--grn)">—</div><div class="st-lbl">Low</div></div>
-          </div>
-          <canvas id="sev-chart" height="180"></canvas>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Severity</span></div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:center">
+          <canvas id="sev-chart" style="max-height:200px"></canvas>
         </div>
       </div>
     </div>
 
-    <div class="g21">
-      <!-- Waste bars -->
-      <div class="panel">
-        <div class="ph"><div class="ph-title">Waste $/day by Detector</div></div>
-        <div class="pb"><div id="waste-bars"></div></div>
+    <!-- RECENT FINDINGS FEED -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Recent Findings</span>
+        <span class="card-sub" id="stream-count"></span>
       </div>
-      <!-- Live stream -->
-      <div class="panel">
-        <div class="ph">
-          <div class="ph-title">Live Feed</div>
-          <div class="ph-right">
-            <span id="stream-badge" style="font-size:10px;font-family:var(--mono);color:var(--t3)">0 findings</span>
+      <div class="card-body flush">
+        <div id="stream" style="padding:12px 16px">
+          <div class="empty">
+            <div class="empty-icon">📡</div>
+            <div class="empty-title">No data yet</div>
+            <div class="empty-body">Drop .jsonl trace files into your traces/ folder,<br>or load the built-in sample to see monk in action.</div>
+            <button class="btn btn-primary" onclick="loadSample()">⚡ Load sample data</button>
           </div>
         </div>
-        <div class="pb"><div class="stream" id="stream">
-          <div class="empty"><div class="empty-icon">📡</div><div class="empty-text">No data yet.<br><br><button class="nav-btn" style="margin:0 auto" onclick="loadSample()">⚡ Load sample data</button><br><span style="font-size:11px;color:var(--t4)">or drop .jsonl trace files into traces/</span></div></div>
-        </div></div>
       </div>
     </div>
 
@@ -552,26 +599,32 @@ footer a:hover{color:var(--or)}
   <!-- ══ FINDINGS ══════════════════════════════════════════════════════════ -->
   <div class="tab-pane" id="tab-findings">
 
-    <div class="sec-label">Top Findings & Actionable Fixes</div>
-    <div class="panel" style="margin-bottom:16px">
-      <div class="tbl">
-        <table>
-          <thead><tr>
-            <th>Detector</th><th>Severity</th><th>Waste/Day</th>
-            <th>What it catches</th><th>Fix</th>
-          </tr></thead>
-          <tbody id="findings-tbody">
-            <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--t3)">Loading…</td></tr>
-          </tbody>
-        </table>
+    <div class="sh" style="margin-bottom:16px">
+      <span class="sh-title">Actionable Findings</span>
+      <button class="btn" onclick="triggerScan()">↻ Re-scan</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body flush">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Detector</th><th>Severity</th><th>Waste / Day</th>
+              <th>What it catches</th><th>Recommended fix</th>
+            </tr></thead>
+            <tbody id="findings-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:36px;color:var(--t3)">No findings yet — load data first.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="sec-label">Recent Findings Detail</div>
-    <div class="panel">
-      <div class="pb" style="padding-top:14px">
-        <div class="stream" style="max-height:500px" id="findings-stream">
-          <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No findings yet.</div></div>
+    <div class="sh"><span class="sh-title">Finding Details</span></div>
+    <div class="card">
+      <div class="card-body">
+        <div class="f-list" style="max-height:520px" id="findings-stream">
+          <div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">No findings yet</div></div>
         </div>
       </div>
     </div>
@@ -581,14 +634,15 @@ footer a:hover{color:var(--or)}
   <!-- ══ DATASETS ══════════════════════════════════════════════════════════ -->
   <div class="tab-pane" id="tab-datasets">
 
-    <div class="sec-label">Available Datasets</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:18px;line-height:1.6">
-      Download real-world agent trace data from
-      <a href="https://huggingface.co/datasets/Blueconomy/monk-benchmarks" target="_blank" style="color:var(--or);text-decoration:none">Blueconomy/monk-benchmarks ↗</a>.
-      Files are saved to your <span style="font-family:var(--mono);color:var(--t1)">traces/</span> folder and analyzed automatically within 30 seconds.
+    <div class="sh">
+      <span class="sh-title">Available Datasets</span>
+      <a href="https://huggingface.co/datasets/Blueconomy/monk-benchmarks" target="_blank" style="font-size:12px;color:var(--or);text-decoration:none;font-weight:500">Blueconomy/monk-benchmarks ↗</a>
+    </div>
+    <p style="font-size:13px;color:var(--t3);margin-bottom:20px;line-height:1.6">
+      Download real-world agent traces. Files land in your <code style="font-family:var(--mono);background:var(--s3);padding:1px 5px;border-radius:4px;font-size:11px">traces/</code> folder and are picked up automatically within 30 seconds.
     </p>
     <div class="ds-grid" id="ds-grid">
-      <div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-text">Loading…</div></div>
+      <div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-title">Loading…</div></div>
     </div>
 
   </div>
@@ -600,42 +654,39 @@ footer a:hover{color:var(--or)}
   <div class="right">
     <a href="/findings">findings JSON</a>
     <a href="/metrics">prometheus</a>
-    <a href="/datasets">datasets API</a>
     <a href="https://github.com/Blueconomy/monk" target="_blank">GitHub ↗</a>
   </div>
 </footer>
 
 <script>
-// ── Charts ──────────────────────────────────────────────────────────────────
-Chart.defaults.color='#555';Chart.defaults.font.family="Inter,-apple-system,sans-serif";Chart.defaults.font.size=11;
-let detChart=null,sevChart=null;
+Chart.defaults.color='#8a8078';
+Chart.defaults.font.family="Inter,-apple-system,sans-serif";
+Chart.defaults.font.size=11;
+let sevChart=null;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1000?(n/1000).toFixed(1)+'k':String(n??'—');
-const fmtUSD=v=>v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+Math.round(v);
+const fmtUSD=v=>v===0?'$0':v<0.01?'<$0.01':v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+v.toFixed(2);
 
 const FIXES={
-  agent_loop:{what:'Agent cycling A→B→A→B with no progress',fix:'Add a visited-state set; break when (tool,args) recurs within a window.'},
-  retry_loop:{what:'Same tool called 3+ consecutive times',fix:'Result-cache keyed on (tool,args). Eliminate recomputation.'},
-  empty_return:{what:'Tool returns null → agent retries anyway',fix:'Guard: if result is empty, inject "no data found" before next LLM call.'},
-  context_bloat:{what:'System prompt >55% of context budget',fix:'Compress system prompt; sliding-window or summarize every N turns.'},
-  token_bloat:{what:'Single tool injected 5× the session median',fix:'Truncate tool outputs to 1,000–2,000 tokens before injecting into context.'},
-  error_cascade:{what:'Tool fails silently → 6–8 wasted downstream calls',fix:'Guard every tool call — if error, short-circuit before next LLM call.'},
+  agent_loop:{what:'Agent cycles A→B→A→B with no progress',fix:'Add visited-state guard; break when (tool,args) recurs.'},
+  retry_loop:{what:'Same tool called 3+ consecutive times',fix:'Result-cache on (tool,args); eliminate recomputation.'},
+  empty_return:{what:'Tool returns null/empty → agent retries',fix:'Inject "no data found" message; skip next LLM call.'},
+  context_bloat:{what:'System prompt > 55% of context budget',fix:'Compress prompt; use sliding-window summarization.'},
+  token_bloat:{what:'Tool output 5× session median tokens',fix:'Truncate tool outputs to 1–2k tokens before injection.'},
+  error_cascade:{what:'Tool error ignored → wasted downstream calls',fix:'Short-circuit on tool error before next LLM call.'},
   cross_turn_memory:{what:'Same tool+args re-fetched across turns',fix:'Session-level result cache with 1-turn TTL.'},
-  model_overkill:{what:'Flagship model doing formatting/classification',fix:'Route sub-tasks to gpt-4o-mini/haiku; reserve Opus for reasoning.'},
-  text_io:{what:'Low output compression or unbounded input growth',fix:'Truncate inputs; validate task clarity; rolling context window.'},
-  latency_spike:{what:'Single call outlier vs session median',fix:'Timeout + retry with exponential backoff.'},
-  output_format:{what:'Model violates format rules in system prompt',fix:'Format validator after each LLM call; retry on violation.'},
-  plan_execution:{what:'Model planned steps then never executed them',fix:'Assert each planned step is followed by a matching tool call.'},
-  span_consistency:{what:'Model asserts facts with no supporting tool call',fix:'Require a grounding tool call before asserting external facts.'},
-  tool_dependency:{what:'Cycles or deep chains in tool call graph',fix:'Flatten tool dependencies; eliminate circular tool calls.'},
+  model_overkill:{what:'Flagship model on trivial tasks',fix:'Route formatting/classification to mini models.'},
+  text_io:{what:'Low output compression / unbounded input',fix:'Truncate inputs; rolling context window.'},
+  latency_spike:{what:'Single call outlier vs session median',fix:'Add timeout + retry with exponential backoff.'},
+  output_format:{what:'Model violates format rules in system prompt',fix:'Validate format after each call; retry on violation.'},
+  plan_execution:{what:'Model planned steps then never executed',fix:'Assert each planned step has a matching tool call.'},
+  span_consistency:{what:'Model asserts facts with no tool grounding',fix:'Require tool call before asserting external facts.'},
+  tool_dependency:{what:'Cycles/deep chains in tool call graph',fix:'Flatten dependencies; eliminate circular calls.'},
 };
 
-// ── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const ids=['overview','findings','datasets'];
-    t.className='tab'+(ids[i]===id?' active':'');
+    t.className='tab'+((['overview','findings','datasets'])[i]===id?' active':'');
   });
   document.querySelectorAll('.tab-pane').forEach(p=>{
     p.className='tab-pane'+(p.id==='tab-'+id?' active':'');
@@ -643,201 +694,167 @@ function switchTab(id){
   if(id==='datasets')loadDatasets();
 }
 
-// ── Findings data ─────────────────────────────────────────────────────────────
 async function loadFindings(){
   try{
-    const r=await fetch('/findings',{signal:AbortSignal.timeout(3000)});
+    const r=await fetch('/findings',{signal:AbortSignal.timeout(4000)});
     if(!r.ok)throw new Error(r.status);
     const d=await r.json();
     renderFindings(d);
     setLive(true);
-    document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+    document.getElementById('ts').textContent='Updated '+new Date().toLocaleTimeString();
   }catch(e){setLive(false)}
 }
 
 function setLive(ok){
   const b=document.getElementById('live-badge');
   const t=document.getElementById('badge-text');
-  if(ok){b.className='live';t.textContent='live'}
-  else{b.className='error';t.textContent='disconnected'}
+  b.className=ok?'live':'error';
+  t.textContent=ok?'live':'offline';
 }
 
 function renderFindings(d){
   const s=d.summary;
-  document.getElementById('k-total').textContent=fmt(s.total_findings);
-  document.getElementById('k-total-sub').textContent=`${fmt(s.high)} high · ${fmt(s.medium)} med · ${s.low} low`;
+  // KPIs
   document.getElementById('k-day').textContent=fmtUSD(s.waste_usd_per_day);
-  document.getElementById('k-day-sub').textContent='$'+s.waste_usd_per_day.toFixed(2)+'/day estimated';
+  document.getElementById('k-day-sub').textContent='$'+s.waste_usd_per_day.toFixed(4)+' per day';
   document.getElementById('k-month').textContent=fmtUSD(s.waste_usd_per_month);
+  document.getElementById('k-total').textContent=fmt(s.total_findings);
+  document.getElementById('k-total-sub').textContent=`${s.high||0} high · ${s.medium||0} med · ${s.low||0} low`;
   document.getElementById('k-calls').textContent=fmt(s.calls_analyzed);
   document.getElementById('k-calls-sub').textContent=fmt(s.sessions_analyzed)+' sessions';
-  if(s.calls_analyzed>0)document.getElementById('nav-files').textContent=fmt(s.calls_analyzed)+' calls';
-  document.getElementById('s-h').textContent=fmt(s.high);
-  document.getElementById('s-m').textContent=fmt(s.medium);
-  document.getElementById('s-l').textContent=fmt(s.low);
+  // Nav
+  if(s.calls_analyzed>0){
+    document.getElementById('nav-calls').textContent=fmt(s.calls_analyzed)+' calls · '+fmt(s.sessions_analyzed)+' sessions';
+    document.getElementById('sample-btn').style.display='none';
+  }
+  // Severity
+  document.getElementById('s-h').textContent=fmt(s.high||0);
+  document.getElementById('s-m').textContent=fmt(s.medium||0);
+  document.getElementById('s-l').textContent=fmt(s.low||0);
 
-  // Detector chart
-  const dets=Object.keys(d.by_detector);
-  const counts={};
-  (d.recent_findings||[]).forEach(f=>counts[f.detector]=(counts[f.detector]||0)+1);
-  const vals=dets.map(k=>counts[k]||Math.ceil((d.by_detector[k].waste_per_day||0)*10));
-  const bg=vals.map(v=>v>500?'#f97316cc':v>100?'#f9731680':'#f9731640');
-  if(detChart){detChart.data.labels=dets;detChart.data.datasets[0].data=vals;detChart.data.datasets[0].backgroundColor=bg;detChart.update('active');}
-  else detChart=new Chart(document.getElementById('det-chart'),{type:'bar',data:{labels:dets,datasets:[{data:vals,backgroundColor:bg,borderRadius:3,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#161616',borderColor:'#1f1f1f',borderWidth:1,callbacks:{label:c=>'  '+c.parsed.x+' findings'}}},scales:{x:{grid:{color:'#1a1a1a'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}},y:{grid:{display:false},ticks:{font:{family:'JetBrains Mono,monospace',size:10},color:'#666'}}}}});
+  // Donut chart
+  if(sevChart){sevChart.data.datasets[0].data=[s.high||0,s.medium||0,s.low||0];sevChart.update();}
+  else{
+    const ctx=document.getElementById('sev-chart');
+    if(ctx)sevChart=new Chart(ctx,{type:'doughnut',data:{labels:['High','Medium','Low'],datasets:[{data:[s.high||0,s.medium||0,s.low||0],backgroundColor:['#dc2626','#f97316','#16a34a'],borderColor:['#fff','#fff','#fff'],borderWidth:3,hoverOffset:6}]},options:{responsive:true,cutout:'72%',plugins:{legend:{position:'bottom',labels:{color:'#4a4540',padding:12,usePointStyle:true,pointStyleWidth:8,font:{size:11}}},tooltip:{backgroundColor:'#1a1814',callbacks:{label:c=>'  '+c.parsed+' findings'}}}}});
+  }
 
-  // Severity donut
-  if(sevChart){sevChart.data.datasets[0].data=[s.high,s.medium,s.low];sevChart.update('active');}
-  else sevChart=new Chart(document.getElementById('sev-chart'),{type:'doughnut',data:{labels:['High','Medium','Low'],datasets:[{data:[s.high,s.medium,s.low],backgroundColor:['#ff444488','#f9731688','#22c55e88'],borderColor:['#ff4444','#f97316','#22c55e'],borderWidth:1.5,hoverOffset:4}]},options:{responsive:true,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#555',padding:10,usePointStyle:true,pointStyleWidth:8}},tooltip:{backgroundColor:'#161616',borderColor:'#1f1f1f',borderWidth:1}}}});
+  // Waste bars (improved — thicker, gradient)
+  const dets=Object.entries(d.by_detector).sort((a,b)=>(b[1].waste_per_day||0)-(a[1].waste_per_day||0)).filter(([,v])=>(v.waste_per_day||0)>0);
+  const maxW=Math.max(...dets.map(([,v])=>v.waste_per_day||0),0.001);
+  const totalW=dets.reduce((s,[,v])=>s+(v.waste_per_day||0),0);
+  document.getElementById('waste-total-label').textContent=totalW>0?fmtUSD(totalW)+'/day total':'';
+  document.getElementById('waste-bars').innerHTML=dets.slice(0,8).map(([n,v])=>{
+    const pct=((v.waste_per_day/maxW)*100).toFixed(1);
+    return`<div><div class="w-row-top"><span class="w-name">${n}</span><span class="w-val">${fmtUSD(v.waste_per_day)}</span></div><div class="w-track"><div class="w-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('')||'<div style="color:var(--t4);font-size:12px;padding:8px 0">No waste data yet — run analysis on trace files.</div>';
 
-  // Waste bars
-  const maxW=Math.max(...Object.values(d.by_detector).map(v=>v.waste_per_day||0),0.01);
-  document.getElementById('waste-bars').innerHTML=Object.entries(d.by_detector)
-    .sort((a,b)=>(b[1].waste_per_day||0)-(a[1].waste_per_day||0))
-    .filter(([,v])=>(v.waste_per_day||0)>0)
-    .map(([n,v])=>{
-      const pct=((v.waste_per_day/maxW)*100).toFixed(1);
-      return`<div class="wrow"><div class="wrow-top"><span class="wrow-name">${n}</span><span class="wrow-val${v.waste_per_day<1?' dim':''}">${'$'+v.waste_per_day.toFixed(2)}</span></div><div class="wtrack"><div class="wfill" style="width:${pct}%"></div></div></div>`;
-    }).join('')||'<div style="color:var(--t3);font-size:12px">No waste data yet.</div>';
-
-  // Stream (overview)
-  const recent=(d.recent_findings||[]).slice(-30).reverse();
-  document.getElementById('stream-badge').textContent=recent.length+' findings';
-  const streamHTML=recent.map(f=>`<div class="stream-item ${f.severity}">
-    <div class="si-top"><span class="si-det">${f.detector}</span><span class="si-sev">${f.severity}</span></div>
-    <div class="si-title">${f.title||''}</div>
-    ${f.fix?`<div class="si-fix">${f.fix.slice(0,120)}${f.fix.length>120?'…':''}</div>`:''}
-  </div>`).join('');
-  document.getElementById('stream').innerHTML=streamHTML||'<div class="empty"><div class="empty-icon">📡</div><div class="empty-text">No findings yet.<br>Drop trace files into traces/ or go to Datasets to download.</div></div>';
+  // Recent findings feed
+  const recent=(d.recent_findings||[]).slice(-25).reverse();
+  document.getElementById('stream-count').textContent=recent.length?recent.length+' findings':'';
+  document.getElementById('stream').innerHTML=recent.length?
+    `<div class="f-list">`+recent.map(f=>`<div class="f-item ${f.severity}">
+      <div class="f-top"><span class="f-det">${f.detector}</span><span class="f-sev ${f.severity}">${f.severity}</span>${f.waste_per_day>0?`<span class="f-waste">${fmtUSD(f.waste_per_day)}/day</span>`:''}</div>
+      <div class="f-title">${f.title||''}</div>
+      ${f.fix?`<div class="f-fix">${f.fix.slice(0,140)}${f.fix.length>140?'…':''}</div>`:''}
+    </div>`).join('')+'</div>'
+    :`<div class="empty"><div class="empty-icon">📡</div><div class="empty-title">No data yet</div><div class="empty-body">Drop .jsonl trace files into traces/ or load sample data.</div><button class="btn btn-primary" onclick="loadSample()">⚡ Load sample data</button></div>`;
 
   // Findings tab — table
-  const rows=Object.entries(d.by_detector)
-    .sort((a,b)=>(b[1].waste_per_day||0)-(a[1].waste_per_day||0))
-    .slice(0,12)
-    .map(([name,v])=>{
-      const fx=FIXES[name]||{what:'—',fix:'—'};
-      const w=v.waste_per_day||0;
-      const wStr=w>0?`<span class="mn" style="color:${w>5?'var(--or)':'var(--t2)'}">${'$'+w.toFixed(2)}</span>`:`<span class="mn" style="color:var(--t3)">—</span>`;
-      const sev=w>5?`<div class="sev-badge sev-h"><div class="dot"></div>High</div>`:`<div class="sev-badge sev-m"><div class="dot"></div>Medium</div>`;
-      return`<tr><td><span class="chip ${w>1?'chip-or':'chip-w'}">${name}</span></td><td>${sev}</td><td>${wStr}</td><td style="color:var(--t3);font-size:11px;max-width:160px">${fx.what}</td><td style="font-size:11px;color:var(--t3);max-width:240px;line-height:1.5">${fx.fix}</td></tr>`;
-    }).join('');
-  document.getElementById('findings-tbody').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--t3)">No findings yet.</td></tr>';
+  const rows=Object.entries(d.by_detector).sort((a,b)=>(b[1].waste_per_day||0)-(a[1].waste_per_day||0)).slice(0,12).map(([name,v])=>{
+    const fx=FIXES[name]||{what:'—',fix:'—'};
+    const w=v.waste_per_day||0;
+    const sc=w>5?'sev-h':w>1?'sev-m':'sev-l';
+    const sl=w>5?'High':w>1?'Medium':'Low';
+    return`<tr><td><span class="chip">${name}</span></td>
+      <td><span class="sev-dot ${sc}"><span class="dot"></span>${sl}</span></td>
+      <td><span class="mn" style="color:${w>1?'var(--or)':'var(--t3)'}">${w>0?fmtUSD(w):'—'}</span></td>
+      <td style="font-size:11px;color:var(--t3);max-width:200px">${fx.what}</td>
+      <td style="font-size:11px;color:var(--t3);max-width:260px;line-height:1.5">${fx.fix}</td></tr>`;
+  }).join('');
+  document.getElementById('findings-tbody').innerHTML=rows||'<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--t3)">No findings — drop traces into your folder.</td></tr>';
 
-  // Findings tab — detail stream
-  document.getElementById('findings-stream').innerHTML=recent.map(f=>`<div class="stream-item ${f.severity}">
-    <div class="si-top"><span class="si-det">${f.detector}</span><span class="si-sev">${f.severity}</span></div>
-    <div class="si-title">${f.title||''}</div>
-    <div style="font-size:11px;color:var(--t3);margin-top:4px;line-height:1.5">${f.detail||''}</div>
-    ${f.fix?`<div class="si-fix">${f.fix}</div>`:''}
-    ${(f.sessions||[]).length?`<div style="font-family:var(--mono);font-size:10px;color:var(--t4);margin-top:5px">sessions: ${f.sessions.slice(0,2).join(', ')}</div>`:''}
-  </div>`).join('')||'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No findings yet.</div></div>';
+  // Findings tab — detail list
+  document.getElementById('findings-stream').innerHTML=recent.length?
+    recent.map(f=>`<div class="f-item ${f.severity}">
+      <div class="f-top"><span class="f-det">${f.detector}</span><span class="f-sev ${f.severity}">${f.severity}</span>${f.waste_per_day>0?`<span class="f-waste">${fmtUSD(f.waste_per_day)}/day</span>`:''}</div>
+      <div class="f-title">${f.title||''}</div>
+      ${f.detail?`<div class="f-detail">${f.detail}</div>`:''}
+      ${f.fix?`<div class="f-fix">${f.fix}</div>`:''}
+      ${(f.sessions||[]).length?`<div class="f-sessions">sessions: ${f.sessions.slice(0,3).join(', ')}</div>`:''}
+    </div>`).join('')
+    :'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">No findings yet</div></div>';
 }
 
-// ── Datasets tab ──────────────────────────────────────────────────────────────
 async function loadDatasets(){
   try{
-    const r=await fetch('/datasets',{signal:AbortSignal.timeout(4000)});
-    const datasets=await r.json();
-    renderDatasets(datasets);
+    const r=await fetch('/datasets',{signal:AbortSignal.timeout(5000)});
+    renderDatasets(await r.json());
   }catch(e){
-    document.getElementById('ds-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-text">Could not load dataset list.</div></div>';
+    document.getElementById('ds-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-title">Could not load datasets</div></div>';
   }
 }
 
 function renderDatasets(datasets){
-  const maxSize=Math.max(...datasets.map(d=>d.size_mb));
   document.getElementById('ds-grid').innerHTML=datasets.map(ds=>{
-    const loaded=ds.loaded;
-    const status=ds.status;
-    const isDownloading=status==='downloading';
-    const isError=status==='error';
-    const pct=loaded?100:0;
-    const btnText=isDownloading?'Downloading…':loaded?'✓ Loaded':'↓ Download';
-    const cardClass='ds-card'+(loaded?' loaded':'');
-    const statusClass='ds-status '+status;
-    const statusLabel=isDownloading?'downloading…':loaded?'loaded':isError?'error':'available';
-    const barPct=((ds.size_mb/maxSize)*100).toFixed(0);
-    return`<div class="${cardClass}" id="ds-${ds.id}">
+    const loaded=ds.loaded,st=ds.status,dling=st==='downloading',err=st==='error';
+    const btnTxt=dling?'Downloading…':loaded?'✓ Already loaded':'↓ Download';
+    return`<div class="ds-card${loaded?' loaded':''}" id="ds-${ds.id}">
       <div class="ds-top">
         <div class="ds-name">${ds.label}</div>
-        <div class="${statusClass}">${statusLabel}</div>
+        <span class="ds-badge ${st}">${dling?'downloading…':loaded?'loaded':err?'error':'available'}</span>
       </div>
       <div class="ds-desc">${ds.desc}</div>
       <div class="ds-meta">
-        <span class="ds-tag">${ds.calls} calls</span>
-        <span class="ds-tag ${ds.format==='OTEL'?'otel':''}">${ds.format}</span>
-        <span class="ds-tag">${ds.size_mb}MB</span>
+        <span class="ds-tag">${ds.calls}</span>
+        <span class="ds-tag${ds.format==='OTEL'?' otel':''}">${ds.format}</span>
+        <span class="ds-tag">${ds.size_mb} MB</span>
       </div>
-      <div class="ds-bar-wrap">
-        <div class="ds-bar-label"><span>size</span><span>${ds.size_mb}MB</span></div>
-        <div class="ds-bar-track"><div class="ds-bar-fill" style="width:${barPct}%"></div></div>
-      </div>
-      <button class="ds-btn${loaded?' loaded':''}" onclick="downloadDataset('${ds.id}')" ${isDownloading?'disabled':''}>${btnText}</button>
+      <button class="ds-btn${loaded?' loaded':''}" onclick="downloadDataset('${ds.id}')" ${dling?'disabled':''}>${btnTxt}</button>
     </div>`;
   }).join('');
 }
 
 async function downloadDataset(id){
-  // Optimistically update UI
   const card=document.getElementById('ds-'+id);
   if(!card)return;
   card.querySelector('.ds-btn').disabled=true;
   card.querySelector('.ds-btn').textContent='Downloading…';
-  card.querySelector('.ds-status').className='ds-status downloading';
-  card.querySelector('.ds-status').textContent='downloading…';
-
+  card.querySelector('.ds-badge').className='ds-badge downloading';
+  card.querySelector('.ds-badge').textContent='downloading…';
   try{
-    const r=await fetch('/download',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:id})
-    });
-    const result=await r.json();
-    if(!result.ok){
-      card.querySelector('.ds-btn').textContent='Error — retry';
-      card.querySelector('.ds-btn').disabled=false;
-      card.querySelector('.ds-status').className='ds-status error';
-      card.querySelector('.ds-status').textContent='error';
-    }else{
-      // Poll until done
-      pollDataset(id);
-    }
-  }catch(e){
-    card.querySelector('.ds-btn').textContent='Error — retry';
-    card.querySelector('.ds-btn').disabled=false;
-  }
+    const r=await fetch('/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:id})});
+    if((await r.json()).ok)pollDataset(id);
+    else{card.querySelector('.ds-btn').textContent='Error — retry';card.querySelector('.ds-btn').disabled=false;}
+  }catch(e){card.querySelector('.ds-btn').textContent='Error — retry';card.querySelector('.ds-btn').disabled=false;}
 }
 
-function pollDataset(id,attempts=0){
-  if(attempts>60)return; // 5 min timeout
+function pollDataset(id,n=0){
+  if(n>60)return;
   setTimeout(async()=>{
     try{
-      const r=await fetch('/datasets');
-      const datasets=await r.json();
+      const datasets=await(await fetch('/datasets')).json();
       const ds=datasets.find(d=>d.id===id);
-      if(ds&&ds.status==='ready'&&ds.loaded){
-        renderDatasets(datasets);
-        // Also refresh findings since new data was loaded
-        setTimeout(loadFindings,2000);
-      }else if(ds&&ds.status==='downloading'){
-        pollDataset(id,attempts+1);
-      }else{
-        loadDatasets();
-      }
-    }catch(e){pollDataset(id,attempts+1)}
+      if(ds?.status==='ready'&&ds.loaded){renderDatasets(datasets);setTimeout(loadFindings,2000);}
+      else if(ds?.status==='downloading')pollDataset(id,n+1);
+      else loadDatasets();
+    }catch(e){pollDataset(id,n+1);}
   },5000);
 }
 
-function loadAll(){loadFindings();if(document.getElementById('tab-datasets').classList.contains('active'))loadDatasets()}
-
-async function loadSample(){
-  try{
-    await fetch('/load-sample',{method:'POST'});
-    setTimeout(loadFindings,1500);
-    setTimeout(loadFindings,4000);
-  }catch(e){console.warn('load-sample failed',e)}
+async function triggerScan(){
+  document.getElementById('scan-banner').className='show';
+  try{await fetch('/scan',{method:'POST'});}catch(e){}
+  setTimeout(()=>{document.getElementById('scan-banner').className='';loadFindings();},2500);
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+async function loadSample(){
+  document.getElementById('scan-banner').className='show';
+  try{await fetch('/load-sample',{method:'POST'});}catch(e){}
+  setTimeout(()=>{document.getElementById('scan-banner').className='';loadFindings();},2000);
+  setTimeout(loadFindings,5000);
+}
+
 loadFindings();
 setInterval(loadFindings,15000);
 </script>
