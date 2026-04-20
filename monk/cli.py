@@ -315,6 +315,63 @@ def demo(dataset, dest_dir, no_run):
 
 
 @main.command()
+@click.option("--port", default=9090, show_default=True, help="Dashboard port.")
+@click.option("--dir", "dest_dir", default="./traces", show_default=True,
+              help="Directory to write demo traces and watch.")
+def quickstart(port: int, dest_dir: str) -> None:
+    """Write built-in demo data, analyze it, and open the live dashboard.
+
+    \b
+    This is the fastest way to see monk in action:
+
+      monk quickstart          # uses ./traces on port 9090
+      monk quickstart --port 8080
+    """
+    import json as _json
+    from monk.serve import DEMO_TRACES_JSONL, serve as _serve
+
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+
+    sample_file = dest / "demo_traces.jsonl"
+
+    console.print()
+    console.print("  🕵️  [bold white]monk quickstart[/bold white]")
+    console.print()
+
+    if not sample_file.exists():
+        sample_file.write_text(DEMO_TRACES_JSONL)
+        console.print(f"  [green]✓[/green]  Generated demo traces → [cyan]{sample_file}[/cyan]")
+    else:
+        console.print(f"  [dim]·[/dim]  Using existing [cyan]{sample_file}[/cyan]")
+
+    console.print()
+
+    # Quick analysis pass
+    from monk.parsers.auto import parse_traces as _pt
+    from monk.report import render_report as _rr
+
+    calls = _pt(str(sample_file))
+    findings = []
+    for det in ALL_DETECTORS:
+        if not det.requires_spans:
+            findings.extend(det.run(calls))
+
+    findings.sort(key=lambda x: (
+        -{"low": 0, "medium": 1, "high": 2}.get(x.severity, 0),
+        -x.estimated_waste_usd_per_day,
+    ))
+    _rr(findings, len(calls), str(sample_file))
+
+    console.print()
+    console.print(f"  Starting live dashboard on [orange1]http://localhost:{port}/[/orange1]")
+    console.print(f"  Watching [cyan]{dest}[/cyan] for new trace files  [dim](Ctrl+C to stop)[/dim]")
+    console.print()
+
+    _serve(dest_dir, port=port)
+
+
+@main.command()
 @click.argument("source", type=click.Path(exists=True))
 @click.option(
     "--json", "output_json", default=None,

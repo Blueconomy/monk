@@ -18,6 +18,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
+from monk import __version__
 from monk.detectors import ALL_DETECTORS
 from monk.parsers.auto import parse_traces
 
@@ -89,6 +90,44 @@ CATALOG = [
         "size_mb": 0.01,
     },
 ]
+
+
+# ── Built-in demo sample (33 records, 7 sessions, triggers all 5 trace detectors) ──
+DEMO_TRACES_JSONL = (
+    '{"session_id": "prod-db-crash", "model": "gpt-4o", "input_tokens": 2100, "output_tokens": 95, "tool_name": "database_query", "tool_result": "Connection timeout"}\n'
+    '{"session_id": "prod-db-crash", "model": "gpt-4o", "input_tokens": 2150, "output_tokens": 100, "tool_name": "database_query", "tool_result": "Connection timeout"}\n'
+    '{"session_id": "prod-db-crash", "model": "gpt-4o", "input_tokens": 2200, "output_tokens": 98, "tool_name": "database_query", "tool_result": "Connection timeout"}\n'
+    '{"session_id": "prod-db-crash", "model": "gpt-4o", "input_tokens": 2250, "output_tokens": 92, "tool_name": "database_query", "tool_result": "Connection timeout"}\n'
+    '{"session_id": "prod-db-crash", "model": "gpt-4o", "input_tokens": 2300, "output_tokens": 90, "tool_name": "database_query", "tool_result": "Connection timeout"}\n'
+    '{"session_id": "prod-search-fail", "model": "gpt-4o", "input_tokens": 1800, "output_tokens": 110, "tool_name": "web_search", "tool_result": ""}\n'
+    '{"session_id": "prod-search-fail", "model": "gpt-4o", "input_tokens": 1860, "output_tokens": 110, "tool_name": "web_search", "tool_result": null}\n'
+    '{"session_id": "prod-search-fail", "model": "gpt-4o", "input_tokens": 1920, "output_tokens": 110, "tool_name": "web_search", "tool_result": ""}\n'
+    '{"session_id": "prod-search-fail", "model": "gpt-4o", "input_tokens": 1980, "output_tokens": 110, "tool_name": "web_search", "tool_result": null}\n'
+    '{"session_id": "prod-search-fail", "model": "gpt-4o", "input_tokens": 2040, "output_tokens": 180, "tool_name": "web_search", "tool_result": "[1] OpenAI announces GPT-5..."}\n'
+    '{"session_id": "prod-bloated-prompt", "model": "gpt-4o", "input_tokens": 14000, "output_tokens": 200, "system_prompt_tokens": 8680, "tool_name": "lookup", "tool_result": "data"}\n'
+    '{"session_id": "prod-bloated-prompt", "model": "gpt-4o", "input_tokens": 14400, "output_tokens": 200, "system_prompt_tokens": 8928, "tool_name": "lookup", "tool_result": "data2"}\n'
+    '{"session_id": "prod-bloated-prompt", "model": "gpt-4o", "input_tokens": 14800, "output_tokens": 200, "system_prompt_tokens": 9176, "tool_name": "lookup", "tool_result": "data3"}\n'
+    '{"session_id": "prod-bloated-prompt", "model": "gpt-4o", "input_tokens": 15200, "output_tokens": 200, "system_prompt_tokens": 9424, "tool_name": "lookup", "tool_result": "data4"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 1900, "output_tokens": 140, "tool_name": "search_documents", "tool_result": "result_0"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 1980, "output_tokens": 140, "tool_name": "rank_results", "tool_result": "result_1"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 2060, "output_tokens": 140, "tool_name": "search_documents", "tool_result": "result_2"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 2140, "output_tokens": 140, "tool_name": "rank_results", "tool_result": "result_3"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 2220, "output_tokens": 140, "tool_name": "search_documents", "tool_result": "result_4"}\n'
+    '{"session_id": "prod-loop-agent", "model": "gpt-4o", "input_tokens": 2300, "output_tokens": 140, "tool_name": "rank_results", "tool_result": "result_5"}\n'
+    '{"session_id": "prod-overpriced-format", "model": "gpt-4o", "input_tokens": 800, "output_tokens": 30, "tool_name": "format_json", "tool_result": "{\\"ok\\":true}"}\n'
+    '{"session_id": "prod-overpriced-format", "model": "gpt-4o", "input_tokens": 820, "output_tokens": 32, "tool_name": "format_json", "tool_result": "{\\"ok\\":true}"}\n'
+    '{"session_id": "prod-overpriced-format", "model": "gpt-4o", "input_tokens": 840, "output_tokens": 28, "tool_name": "format_json", "tool_result": "{\\"ok\\":true}"}\n'
+    '{"session_id": "prod-overpriced-format", "model": "gpt-4o", "input_tokens": 860, "output_tokens": 31, "tool_name": "format_json", "tool_result": "{\\"ok\\":true}"}\n'
+    '{"session_id": "prod-overpriced-format", "model": "gpt-4o", "input_tokens": 880, "output_tokens": 29, "tool_name": "format_json", "tool_result": "{\\"ok\\":true}"}\n'
+    '{"session_id": "prod-api-retry", "model": "claude-opus-4-6", "input_tokens": 2500, "output_tokens": 120, "tool_name": "call_payment_api", "tool_result": "503 Service Unavailable"}\n'
+    '{"session_id": "prod-api-retry", "model": "claude-opus-4-6", "input_tokens": 2600, "output_tokens": 120, "tool_name": "call_payment_api", "tool_result": "503 Service Unavailable"}\n'
+    '{"session_id": "prod-api-retry", "model": "claude-opus-4-6", "input_tokens": 2700, "output_tokens": 120, "tool_name": "call_payment_api", "tool_result": "503 Service Unavailable"}\n'
+    '{"session_id": "prod-api-retry", "model": "claude-opus-4-6", "input_tokens": 2800, "output_tokens": 120, "tool_name": "call_payment_api", "tool_result": "503 Service Unavailable"}\n'
+    '{"session_id": "prod-healthy", "model": "gpt-4o-mini", "input_tokens": 1200, "output_tokens": 250, "tool_name": "tool_a", "tool_result": "success"}\n'
+    '{"session_id": "prod-healthy", "model": "gpt-4o-mini", "input_tokens": 1300, "output_tokens": 270, "tool_name": "tool_b", "tool_result": "success"}\n'
+    '{"session_id": "prod-healthy", "model": "gpt-4o-mini", "input_tokens": 1400, "output_tokens": 290, "tool_name": "tool_c", "tool_result": "success"}\n'
+    '{"session_id": "prod-healthy", "model": "gpt-4o-mini", "input_tokens": 1500, "output_tokens": 310, "tool_name": "tool_a", "tool_result": "success"}'
+)
 
 
 class DownloadManager:
@@ -503,7 +542,7 @@ footer a:hover{color:var(--or)}
           </div>
         </div>
         <div class="pb"><div class="stream" id="stream">
-          <div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Waiting for data…<br>Run monk demo or drop trace files into your traces/ folder.</div></div>
+          <div class="empty"><div class="empty-icon">📡</div><div class="empty-text">No data yet.<br><br><button class="nav-btn" style="margin:0 auto" onclick="loadSample()">⚡ Load sample data</button><br><span style="font-size:11px;color:var(--t4)">or drop .jsonl trace files into traces/</span></div></div>
         </div></div>
       </div>
     </div>
@@ -632,6 +671,7 @@ function renderFindings(d){
   document.getElementById('k-month').textContent=fmtUSD(s.waste_usd_per_month);
   document.getElementById('k-calls').textContent=fmt(s.calls_analyzed);
   document.getElementById('k-calls-sub').textContent=fmt(s.sessions_analyzed)+' sessions';
+  if(s.calls_analyzed>0)document.getElementById('nav-files').textContent=fmt(s.calls_analyzed)+' calls';
   document.getElementById('s-h').textContent=fmt(s.high);
   document.getElementById('s-m').textContent=fmt(s.medium);
   document.getElementById('s-l').textContent=fmt(s.low);
@@ -789,6 +829,14 @@ function pollDataset(id,attempts=0){
 
 function loadAll(){loadFindings();if(document.getElementById('tab-datasets').classList.contains('active'))loadDatasets()}
 
+async function loadSample(){
+  try{
+    await fetch('/load-sample',{method:'POST'});
+    setTimeout(loadFindings,1500);
+    setTimeout(loadFindings,4000);
+  }catch(e){console.warn('load-sample failed',e)}
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 loadFindings();
 setInterval(loadFindings,15000);
@@ -800,7 +848,9 @@ setInterval(loadFindings,15000);
 class _Handler(BaseHTTPRequestHandler):
     store: MetricsStore
     dlmgr: "DownloadManager"
-    version: str = "0.4.5"
+    traces_dir: Path
+    rescan_fn: "callable"
+    version: str = __version__
 
     def do_GET(self):
         if self.path in ("/", "/dashboard"):
@@ -825,6 +875,20 @@ class _Handler(BaseHTTPRequestHandler):
             name   = body.get("name", "")
             ok     = self.dlmgr.start_download(name)
             self._respond(200, "application/json", json.dumps({"ok": ok, "name": name}).encode())
+        elif self.path == "/scan":
+            # Trigger immediate rescan in background
+            threading.Thread(target=self.rescan_fn, daemon=True).start()
+            self._respond(200, "application/json", b'{"ok":true}')
+        elif self.path == "/load-sample":
+            # Write built-in demo traces to traces dir and trigger rescan
+            try:
+                dest = self.traces_dir / "demo_traces.jsonl"
+                if not dest.exists():
+                    dest.write_text(DEMO_TRACES_JSONL)
+                threading.Thread(target=self.rescan_fn, daemon=True).start()
+                self._respond(200, "application/json", json.dumps({"ok": True, "file": str(dest)}).encode())
+            except Exception as e:
+                self._respond(500, "application/json", json.dumps({"ok": False, "error": str(e)}).encode())
         else:
             self._respond(404, "text/plain", b"not found")
 
@@ -900,27 +964,33 @@ def serve(path: str, port: int = 9090, interval: int = 30) -> None:
     print(f"  watching   →  {target}  (every {interval}s)")
     print(f"")
 
+    # ── Rescan helper (also called by /scan and /load-sample endpoints) ─────
+    def _rescan():
+        try:
+            fresh, calls, findings, nfiles = _scan_all(target)
+            with _lock:
+                store.__dict__.update(fresh.__dict__)
+            if calls:
+                ts = time.strftime("%H:%M:%S")
+                print(f"[monk] {ts}  {nfiles} file(s) · {calls:,} calls · {findings:,} findings")
+        except Exception as e:
+            print(f"[monk] rescan error: {e}")
+
     # ── Background watcher ───────────────────────────────────────────────────
     def _watch():
         while True:
             time.sleep(interval)
-            try:
-                fresh, calls, findings, nfiles = _scan_all(target)
-                with _lock:
-                    store.__dict__.update(fresh.__dict__)
-                if calls:
-                    ts = time.strftime("%H:%M:%S")
-                    print(f"[monk] {ts}  {nfiles} file(s) · {calls:,} calls · {findings:,} findings")
-            except Exception as e:
-                print(f"[monk] rescan error: {e}")
+            _rescan()
 
     threading.Thread(target=_watch, daemon=True).start()
 
     class Handler(_Handler):
         pass
-    Handler.store   = store
-    Handler.dlmgr   = dlmgr
-    Handler.version = "0.4.5"
+    Handler.store      = store
+    Handler.dlmgr      = dlmgr
+    Handler.traces_dir = target
+    Handler.rescan_fn  = staticmethod(_rescan)
+    Handler.version    = __version__
 
     httpd = HTTPServer(("0.0.0.0", port), Handler)
     try:
