@@ -21,9 +21,11 @@ SUPPORTED_EXTENSIONS = {".jsonl", ".json", ".log", ".txt"}
 
 DETECTOR_NAMES = {
     # TraceCall detectors
-    "retry_loop", "empty_return", "model_overkill", "context_bloat", "agent_loop", "text_io",
+    "retry_loop", "empty_return", "model_overkill", "context_bloat",
+    "agent_loop", "handoff_loop", "text_io",
     # Span detectors
     "latency_spike", "error_cascade", "tool_dependency", "cross_turn_memory",
+    "token_bloat", "output_format", "plan_execution", "span_consistency",
 }
 
 # ── Public HuggingFace dataset files ──────────────────────────────────────────

@@ -5,14 +5,19 @@ Run with: pytest tests/ -v
 import pytest
 from monk.parsers.auto import TraceCall, ToolCall
 from monk.parsers.otel import Span
+import json
+import tempfile
+import os
 from monk.detectors.retry_loop import RetryLoopDetector
 from monk.detectors.empty_return import EmptyReturnDetector
 from monk.detectors.model_overkill import ModelOverkillDetector
 from monk.detectors.context_bloat import ContextBloatDetector
 from monk.detectors.agent_loop import AgentLoopDetector
+from monk.detectors.handoff_loop import HandoffLoopDetector
 from monk.detectors.output_format import OutputFormatDetector
 from monk.detectors.plan_execution import PlanExecutionDetector
 from monk.detectors.span_consistency import SpanConsistencyDetector
+from monk.parsers.auto import parse_traces
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -176,12 +181,22 @@ class TestAgentLoop:
         findings = AgentLoopDetector().run(calls)
         assert len(findings) >= 1
 
-    def test_detects_single_tool_loop(self):
+    def test_single_tool_loop_is_NOT_agent_loop(self):
+        """Single-tool repetitions belong to retry_loop, not agent_loop."""
         calls = [
             make_call(idx=i, tools=[tc("think")])
             for i in range(4)
         ]
         findings = AgentLoopDetector().run(calls)
+        assert len(findings) == 0  # agent_loop skips single-tool patterns
+
+    def test_single_tool_loop_IS_caught_by_retry_loop(self):
+        """Confirm retry_loop picks up what agent_loop intentionally skips."""
+        calls = [
+            make_call(idx=i, tools=[tc("think")])
+            for i in range(4)
+        ]
+        findings = RetryLoopDetector().run(calls)
         assert len(findings) >= 1
 
     def test_no_finding_for_varied_sequence(self):
@@ -191,6 +206,187 @@ class TestAgentLoop:
         ]
         findings = AgentLoopDetector().run(calls)
         assert len(findings) == 0
+
+
+# ── HandoffLoopDetector ──────────────────────────────────────────────
+
+class TestHandoffLoop:
+    def _swarm_calls(self, cycles: int, session: str = "s1") -> list[TraceCall]:
+        """Simulate agent_A ↔ agent_B bouncing for N cycles."""
+        calls = []
+        for i in range(cycles):
+            calls.append(make_call(
+                session=session, idx=i * 2,
+                tools=[tc("transfer_to_agent_B")],
+            ))
+            calls.append(make_call(
+                session=session, idx=i * 2 + 1,
+                tools=[tc("transfer_back_to_agent_A")],
+            ))
+        return calls
+
+    def test_detects_agent_bounce(self):
+        calls = self._swarm_calls(cycles=4)
+        findings = HandoffLoopDetector().run(calls)
+        assert len(findings) >= 1
+        assert "agent_A" in findings[0].title or "agent_B" in findings[0].title
+        assert findings[0].severity == "high"
+
+    def test_no_finding_for_two_cycles(self):
+        """Two transfers (below threshold of 3 pair occurrences) — no finding."""
+        calls = self._swarm_calls(cycles=2)
+        findings = HandoffLoopDetector().run(calls)
+        assert len(findings) == 0
+
+    def test_no_finding_for_clean_handoff(self):
+        """Linear A→B→C handoff with no cycling — no finding."""
+        calls = [
+            make_call(idx=0, tools=[tc("transfer_to_agent_B")]),
+            make_call(idx=1, tools=[tc("transfer_to_agent_C")]),
+            make_call(idx=2, tools=[]),
+        ]
+        findings = HandoffLoopDetector().run(calls)
+        assert len(findings) == 0
+
+    def test_separate_sessions_not_merged(self):
+        """Two sessions each with 2 cycles should not merge into one finding."""
+        calls = self._swarm_calls(cycles=2, session="s1") + \
+                self._swarm_calls(cycles=2, session="s2")
+        findings = HandoffLoopDetector().run(calls)
+        assert len(findings) == 0  # 2 cycles per session < threshold
+
+    def test_non_transfer_tools_ignored(self):
+        """Regular tool calls should not trigger handoff_loop."""
+        calls = [
+            make_call(idx=i, tools=[tc("web_search"), tc("python_interpreter")])
+            for i in range(6)
+        ]
+        findings = HandoffLoopDetector().run(calls)
+        assert len(findings) == 0
+
+
+# ── LangGraph Parser ─────────────────────────────────────────────────
+
+class TestLangGraphParser:
+    def _write_jsonl(self, records: list[dict]) -> str:
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False)
+        for r in records:
+            f.write(json.dumps(r) + "\n")
+        f.close()
+        return f.name
+
+    def _supervisor_response(self, session_id: str = "lg-test") -> dict:
+        return {
+            "session_id": session_id,
+            "messages": [
+                {"type": "human", "content": "What is 3+4?"},
+                {
+                    "type": "ai", "name": "supervisor", "content": "",
+                    "tool_calls": [{"name": "transfer_to_add_agent", "args": {}, "id": "c1"}],
+                    "usage_metadata": {"input_tokens": 150, "output_tokens": 25, "total_tokens": 175},
+                    "response_metadata": {"model_name": "gpt-4o"},
+                },
+                {"type": "tool", "name": "transfer_to_add_agent", "content": "Transferred", "tool_call_id": "c1"},
+                {
+                    "type": "ai", "name": "add_agent", "content": "",
+                    "tool_calls": [{"name": "add", "args": {"a": 3, "b": 4}, "id": "c2"}],
+                    "usage_metadata": {"input_tokens": 200, "output_tokens": 30, "total_tokens": 230},
+                    "response_metadata": {"model_name": "gpt-4o-mini"},
+                },
+                {"type": "tool", "name": "add", "content": "7", "tool_call_id": "c2"},
+                {
+                    "type": "ai", "name": "supervisor", "content": "The answer is 7.",
+                    "usage_metadata": {"input_tokens": 300, "output_tokens": 80, "total_tokens": 380},
+                    "response_metadata": {"model_name": "gpt-4o"},
+                },
+            ],
+        }
+
+    def test_parses_multi_turn_langgraph_response(self):
+        fname = self._write_jsonl([self._supervisor_response()])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        # 3 AIMessages with usage_metadata → 3 TraceCalls
+        assert len(calls) == 3
+
+    def test_extracts_correct_models(self):
+        fname = self._write_jsonl([self._supervisor_response()])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        models = [c.model for c in calls]
+        assert models[0] == "gpt-4o"      # supervisor
+        assert models[1] == "gpt-4o-mini"  # specialist
+        assert models[2] == "gpt-4o"       # supervisor final
+
+    def test_extracts_transfer_tool_calls(self):
+        fname = self._write_jsonl([self._supervisor_response()])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        first_call_tools = [t.name for t in calls[0].tool_calls]
+        assert "transfer_to_add_agent" in first_call_tools
+
+    def test_resolves_tool_results_by_id(self):
+        fname = self._write_jsonl([self._supervisor_response()])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        # add_agent's tool call (add) should have result "7"
+        add_agent_call = calls[1]
+        assert add_agent_call.tool_calls[0].result == "7"
+
+    def test_extracts_token_counts(self):
+        fname = self._write_jsonl([self._supervisor_response()])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        assert calls[0].input_tokens == 150
+        assert calls[0].output_tokens == 25
+        assert calls[1].input_tokens == 200
+
+    def test_session_id_from_outer_record(self):
+        fname = self._write_jsonl([self._supervisor_response("my-session-123")])
+        try:
+            calls = parse_traces(fname)
+        finally:
+            os.unlink(fname)
+        assert all(c.session_id == "my-session-123" for c in calls)
+
+    def test_handoff_loop_fires_on_langgraph_swarm(self):
+        """End-to-end: LangGraph swarm JSONL → parser → handoff_loop detector."""
+        messages = [{"type": "human", "content": "do the task"}]
+        for i in range(4):
+            messages += [
+                {
+                    "type": "ai", "name": "agent_A", "content": "",
+                    "tool_calls": [{"name": "transfer_to_agent_B", "args": {}, "id": f"a{i}"}],
+                    "usage_metadata": {"input_tokens": 1400, "output_tokens": 80, "total_tokens": 1480},
+                    "response_metadata": {"model_name": "gpt-4o"},
+                },
+                {"type": "tool", "name": "transfer_to_agent_B", "content": "Transferred", "tool_call_id": f"a{i}"},
+                {
+                    "type": "ai", "name": "agent_B", "content": "",
+                    "tool_calls": [{"name": "transfer_back_to_agent_A", "args": {}, "id": f"b{i}"}],
+                    "usage_metadata": {"input_tokens": 1600, "output_tokens": 90, "total_tokens": 1690},
+                    "response_metadata": {"model_name": "gpt-4o"},
+                },
+                {"type": "tool", "name": "transfer_back_to_agent_A", "content": "Back", "tool_call_id": f"b{i}"},
+            ]
+        fname = self._write_jsonl([{"session_id": "swarm-e2e", "messages": messages}])
+        try:
+            calls = parse_traces(fname)
+            findings = HandoffLoopDetector().run(calls)
+        finally:
+            os.unlink(fname)
+        assert len(findings) >= 1
+        assert "agent_A" in findings[0].title or "agent_B" in findings[0].title
 
 
 # ── Span helpers ─────────────────────────────────────────────────────
