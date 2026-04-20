@@ -506,6 +506,68 @@ input[type=range].cfg-inp{padding:2px 0;accent-color:var(--or)}
 #scan-banner{display:none;align-items:center;gap:12px;padding:10px 32px;background:var(--or2);border-bottom:1px solid var(--or3)}
 #scan-banner.show{display:flex}
 .scan-text{font-size:12px;color:var(--or);font-weight:500}
+
+/* USAGE TAB */
+.drop-zone{border:2px dashed var(--b2);border-radius:12px;padding:56px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s1)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--or);background:var(--or2)}
+.drop-zone-icon{font-size:42px;margin-bottom:14px}
+.drop-zone-title{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px}
+.drop-zone-sub{font-size:12px;color:var(--t3);line-height:1.6}
+.drop-zone .btn{margin-top:16px}
+#u-report{display:none}
+.u-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.u-kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.u-kpi-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.u-kpi-val{font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--t1);line-height:1}
+.u-kpi-val.orange{color:var(--or)}
+.u-kpi-val.red{color:var(--red)}
+.u-kpi-val.green{color:var(--grn)}
+.u-kpi-sub{font-size:10px;color:var(--t4);margin-top:4px}
+.u-kpi.savings{border-color:var(--or3);background:var(--or2)}
+.u-kpi.savings .u-kpi-label{color:var(--or)}
+.u-users{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+.u-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.u-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.u-card-label{font-size:13px;font-weight:700;color:var(--t1)}
+.u-card-cost{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--or)}
+.u-card-rows{display:flex;flex-direction:column;gap:7px}
+.u-card-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.u-card-row-label{color:var(--t3)}
+.u-card-row-val{font-family:var(--mono);font-weight:600;color:var(--t1)}
+.u-bar-wrap{height:4px;background:var(--b1);border-radius:2px;margin-top:6px;overflow:hidden}
+.u-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--or4),var(--or))}
+.u-finding{padding:14px 16px;border-radius:8px;border:1px solid var(--b1);background:var(--s2);border-left:4px solid var(--b2);margin-bottom:8px;transition:background .12s}
+.u-finding:hover{background:var(--s1)}
+.u-finding.high{border-left-color:var(--red)}
+.u-finding.medium{border-left-color:var(--or)}
+.u-finding.low{border-left-color:var(--grn)}
+.u-f-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.u-f-pattern{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--or2);color:var(--or);border:1px solid var(--or3)}
+.u-f-sev{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.3px}
+.u-f-sev.high{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+.u-f-sev.medium{background:#fff7ed;color:var(--or);border:1px solid var(--or3)}
+.u-f-sev.low{background:#f0fdf4;color:var(--grn);border:1px solid #bbf7d0}
+.u-f-savings{margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:800;color:var(--grn)}
+.u-f-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.u-f-detail{font-size:12px;color:var(--t2);margin-bottom:6px;line-height:1.5}
+.u-f-fix{font-size:11px;color:var(--t3);line-height:1.5}
+.u-f-fix::before{content:'Fix → ';color:var(--or);font-weight:700}
+.u-models{display:flex;flex-direction:column;gap:10px}
+.u-model-row{display:flex;align-items:center;gap:12px}
+.u-model-name{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t2);width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-model-bar-wrap{flex:1;height:8px;background:var(--b1);border-radius:4px;overflow:hidden}
+.u-model-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--or4),var(--or))}
+.u-model-cost{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--or);width:60px;text-align:right}
+.u-cs{background:linear-gradient(135deg,#1a1814 0%,#2a2520 100%);border-radius:12px;padding:24px 28px;margin-bottom:20px;color:#f8f8f6}
+.u-cs-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f97316;margin-bottom:4px}
+.u-cs-sub{font-size:18px;font-weight:800;color:#fff;margin-bottom:14px;letter-spacing:-.3px}
+.u-cs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.u-cs-stat{text-align:center}
+.u-cs-stat-val{font-size:22px;font-weight:800;color:#f97316;letter-spacing:-1px;line-height:1}
+.u-cs-stat-label{font-size:10px;color:#b0a898;margin-top:3px}
+.u-cs-body{font-size:12px;color:#c0bbb0;line-height:1.7}
+.u-cs-body strong{color:#f8f8f6}
+.u-platform-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--or2);color:var(--or);border:1px solid var(--or3);font-family:var(--mono);margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -537,6 +599,7 @@ input[type=range].cfg-inp{padding:2px 0;accent-color:var(--or)}
   <div class="tab" onclick="switchTab('findings')">Findings</div>
   <div class="tab" onclick="switchTab('datasets')">Datasets</div>
   <div class="tab" onclick="switchTab('simulate')">Simulate ✦</div>
+  <div class="tab" onclick="switchTab('usage')">Usage ◈</div>
 </div>
 
 <div class="page">
@@ -778,6 +841,128 @@ input[type=range].cfg-inp{padding:2px 0;accent-color:var(--or)}
 
   </div>
 
+  <!-- ══ USAGE ════════════════════════════════════════════════════════════ -->
+  <div class="tab-pane" id="tab-usage">
+
+    <!-- DROP ZONE -->
+    <div id="u-drop-wrap">
+      <div class="drop-zone" id="u-drop"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="uDrop(event)">
+        <div class="drop-zone-icon">📊</div>
+        <div class="drop-zone-title">Drop your team billing CSV here</div>
+        <div class="drop-zone-sub">
+          Supported: <strong>Claude.ai team usage export</strong> · Cursor billing export · OpenAI usage export<br>
+          All user data is anonymised in the browser — nothing is sent to any external server.
+        </div>
+        <button class="btn btn-primary" style="margin-top:18px" onclick="document.getElementById('u-file-input').click()">
+          📂 Choose CSV file
+        </button>
+        <input type="file" id="u-file-input" accept=".csv" style="display:none" onchange="uFileChosen(this)">
+      </div>
+      <p style="font-size:11px;color:var(--t3);text-align:center;margin-top:12px">
+        Need sample data? <a href="#" style="color:var(--or)" onclick="uLoadDemo();return false">Load anonymised case study →</a>
+      </p>
+    </div>
+
+    <!-- REPORT (hidden until file uploaded) -->
+    <div id="u-report">
+
+      <!-- platform badge + re-upload -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div id="u-platform-badge" class="u-platform-badge"></div>
+        <button class="btn" onclick="uReset()">↑ Upload different file</button>
+      </div>
+
+      <!-- KPI ROW -->
+      <div class="u-kpi-row">
+        <div class="u-kpi">
+          <div class="u-kpi-label">Period</div>
+          <div class="u-kpi-val" id="u-period" style="font-size:16px;letter-spacing:0">—</div>
+          <div class="u-kpi-sub" id="u-period-sub"></div>
+        </div>
+        <div class="u-kpi">
+          <div class="u-kpi-label">Total Spend</div>
+          <div class="u-kpi-val orange" id="u-total-cost">—</div>
+          <div class="u-kpi-sub" id="u-total-calls"></div>
+        </div>
+        <div class="u-kpi">
+          <div class="u-kpi-label">Monthly Run Rate</div>
+          <div class="u-kpi-val orange" id="u-monthly">—</div>
+          <div class="u-kpi-sub">if usage continues unchanged</div>
+        </div>
+        <div class="u-kpi">
+          <div class="u-kpi-label">Total Tokens</div>
+          <div class="u-kpi-val" id="u-tokens">—</div>
+          <div class="u-kpi-sub" id="u-users-count"></div>
+        </div>
+        <div class="u-kpi savings">
+          <div class="u-kpi-label">Savings Potential / mo</div>
+          <div class="u-kpi-val green" id="u-savings">—</div>
+          <div class="u-kpi-sub" id="u-savings-pct"></div>
+        </div>
+      </div>
+
+      <!-- CASE STUDY PANEL -->
+      <div id="u-case-study" class="u-cs" style="display:none">
+        <div class="u-cs-title">Real-World Case Study · Blueconomy AI Internal</div>
+        <div class="u-cs-sub">69 days of Claude.ai team usage — anonymised benchmark</div>
+        <div class="u-cs-grid">
+          <div class="u-cs-stat"><div class="u-cs-stat-val">$2,117</div><div class="u-cs-stat-label">Total Spend</div></div>
+          <div class="u-cs-stat"><div class="u-cs-stat-val">$920</div><div class="u-cs-stat-label">Monthly Run Rate</div></div>
+          <div class="u-cs-stat"><div class="u-cs-stat-val">93%</div><div class="u-cs-stat-label">Cache-Read Tokens</div></div>
+          <div class="u-cs-stat"><div class="u-cs-stat-val">$873/mo</div><div class="u-cs-stat-label">Savings Identified</div></div>
+        </div>
+        <div class="u-cs-body">
+          <strong>Finding:</strong> One power user (User A) drove 95% of all spend. Conversations were never reset — cache tokens compounded over weeks.
+          Worst single call: $47.05. <strong>Fix applied:</strong> Added session-reset policy + context window cap.
+          <strong>Result:</strong> Projected ~$10,400/yr savings with zero capability loss.
+        </div>
+      </div>
+
+      <!-- LAYOUT: findings left, models right -->
+      <div class="g2" style="margin-bottom:20px">
+
+        <!-- FINDINGS -->
+        <div>
+          <div class="sh" style="margin-bottom:12px">
+            <span class="sh-title">Patterns Detected</span>
+            <span class="card-sub" id="u-findings-count"></span>
+          </div>
+          <div id="u-findings-list">
+            <div class="empty"><div class="empty-icon">✅</div><div class="empty-title">No issues found</div></div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: models + users -->
+        <div>
+          <div class="sh" style="margin-bottom:12px"><span class="sh-title">Spend by Model</span></div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-body">
+              <div class="u-models" id="u-models-list"></div>
+            </div>
+          </div>
+
+          <div class="sh" style="margin-bottom:12px"><span class="sh-title">Users (anonymised)</span></div>
+          <div class="u-users" id="u-users-list"></div>
+        </div>
+
+      </div>
+
+      <!-- RECOMMENDATIONS FOOTER -->
+      <div class="card" id="u-recs-card" style="display:none">
+        <div class="card-head">
+          <span class="card-title">🗺️ Recommended Workflow</span>
+          <span class="card-sub">Based on detected patterns</span>
+        </div>
+        <div class="card-body" id="u-recs-body" style="font-size:12px;line-height:1.8;color:var(--t2)"></div>
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
 
 <footer>
@@ -817,7 +1002,7 @@ const FIXES={
 
 function switchTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.className='tab'+((['overview','findings','datasets','simulate'])[i]===id?' active':'');
+    t.className='tab'+((['overview','findings','datasets','simulate','usage'])[i]===id?' active':'');
   });
   document.querySelectorAll('.tab-pane').forEach(p=>{
     p.className='tab-pane'+(p.id==='tab-'+id?' active':'');
@@ -1249,6 +1434,159 @@ function simShowRes(d){
 // load retry_loop preset by default when tab opens
 document.querySelector('.tab[onclick="switchTab(\'simulate\')"]')
   ?.addEventListener('click',()=>{if(!G.nodes.length)simLoad('retry_loop');});
+
+// ── Usage tab ─────────────────────────────────────────────────────────────────
+
+const fmtM=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'k':String(n??0);
+const fmtU=v=>v===0?'$0':v>=10000?'$'+(v/1000).toFixed(0)+'k':v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+v.toFixed(2);
+const sevIcon={high:'🔴',medium:'🟡',low:'🟢'};
+const platformLabel={'claude_ai':'Claude.ai','cursor':'Cursor','openai':'OpenAI'};
+
+function uDrop(e){
+  e.preventDefault();
+  document.getElementById('u-drop').classList.remove('drag-over');
+  const file=e.dataTransfer.files[0];
+  if(file)uReadFile(file);
+}
+function uFileChosen(input){
+  const file=input.files[0];
+  if(file)uReadFile(file);
+}
+function uReadFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>uAnalyse(ev.target.result,false);
+  reader.readAsText(file);
+}
+function uReset(){
+  document.getElementById('u-report').style.display='none';
+  document.getElementById('u-drop-wrap').style.display='block';
+  document.getElementById('u-file-input').value='';
+}
+async function uLoadDemo(){
+  // Load anonymised case study demo CSV
+  const resp=await fetch('/usage-demo');
+  if(!resp.ok){alert('Demo data not available.');return;}
+  const csv=await resp.text();
+  uAnalyse(csv,true);
+}
+
+async function uAnalyse(csvText,isDemo){
+  const drop=document.getElementById('u-drop');
+  drop.innerHTML='<div class="drop-zone-icon">⏳</div><div class="drop-zone-title">Analysing…</div>';
+
+  try{
+    const resp=await fetch('/analyze-usage',{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:csvText,
+    });
+    const d=await resp.json();
+    if(!d.ok){
+      drop.innerHTML=`<div class="drop-zone-icon">❌</div><div class="drop-zone-title">Parse error</div><div class="drop-zone-sub">${d.error}</div><button class="btn" onclick="uReset()" style="margin-top:16px">Try again</button>`;
+      return;
+    }
+    uRenderReport(d.report,isDemo);
+  }catch(ex){
+    drop.innerHTML=`<div class="drop-zone-icon">❌</div><div class="drop-zone-title">Network error</div><div class="drop-zone-sub">${ex.message}</div><button class="btn" onclick="uReset()" style="margin-top:16px">Try again</button>`;
+  }
+}
+
+function uRenderReport(r,isDemo){
+  document.getElementById('u-drop-wrap').style.display='none';
+  document.getElementById('u-report').style.display='block';
+
+  // Platform badge
+  document.getElementById('u-platform-badge').innerHTML=
+    '📊 '+( platformLabel[r.platform]||r.platform)+' export';
+
+  // KPIs
+  const s=r.period_start.slice(0,10),e=r.period_end.slice(0,10);
+  document.getElementById('u-period').textContent=s+' → '+e;
+  document.getElementById('u-period-sub').textContent=r.period_days+' days';
+  document.getElementById('u-total-cost').textContent=fmtU(r.total_cost_usd);
+  document.getElementById('u-total-calls').textContent=r.total_calls.toLocaleString()+' calls';
+  document.getElementById('u-monthly').textContent=fmtU(r.monthly_run_rate_usd);
+  document.getElementById('u-tokens').textContent=fmtM(r.total_tokens);
+  document.getElementById('u-users-count').textContent=r.users.length+' users';
+  document.getElementById('u-savings').textContent=fmtU(r.total_savings_potential_usd);
+  const pct=r.monthly_run_rate_usd>0?Math.round(r.total_savings_potential_usd/r.monthly_run_rate_usd*100):0;
+  document.getElementById('u-savings-pct').textContent=pct+'% of monthly run rate';
+
+  // Case study
+  const csEl=document.getElementById('u-case-study');
+  csEl.style.display=isDemo?'block':'none';
+
+  // Findings
+  const fList=document.getElementById('u-findings-list');
+  document.getElementById('u-findings-count').textContent=r.findings.length+' issue'+(r.findings.length!==1?'s':'');
+  if(r.findings.length===0){
+    fList.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">No issues found</div></div>';
+  }else{
+    fList.innerHTML=r.findings.map(f=>`
+      <div class="u-finding ${f.severity}">
+        <div class="u-f-top">
+          <span class="u-f-pattern">${f.pattern}</span>
+          <span class="u-f-sev ${f.severity}">${sevIcon[f.severity]} ${f.severity}</span>
+          ${f.savings_per_month_usd>0?`<span class="u-f-savings">save ${fmtU(f.savings_per_month_usd)}/mo</span>`:''}
+        </div>
+        <div class="u-f-title">${f.title}</div>
+        <div class="u-f-detail">${f.detail}</div>
+        <div class="u-f-fix">${f.fix}</div>
+      </div>`).join('');
+  }
+
+  // Models
+  const mList=document.getElementById('u-models-list');
+  const maxModelCost=Math.max(...r.models.map(m=>m.cost),0.01);
+  mList.innerHTML=r.models.slice(0,8).map(m=>`
+    <div class="u-model-row">
+      <div class="u-model-name">${m.model}</div>
+      <div class="u-model-bar-wrap"><div class="u-model-bar" style="width:${Math.round(m.cost/maxModelCost*100)}%"></div></div>
+      <div class="u-model-cost">${fmtU(m.cost)}</div>
+    </div>`).join('');
+
+  // Users
+  const uList=document.getElementById('u-users-list');
+  uList.innerHTML=r.users.map(u=>`
+    <div class="u-card">
+      <div class="u-card-head">
+        <div class="u-card-label">${u.label}</div>
+        <div class="u-card-cost">${fmtU(u.cost)}</div>
+      </div>
+      <div class="u-card-rows">
+        <div class="u-card-row"><span class="u-card-row-label">API calls</span><span class="u-card-row-val">${u.calls.toLocaleString()}</span></div>
+        <div class="u-card-row"><span class="u-card-row-label">Cache read %</span><span class="u-card-row-val">${u.cache_pct}%</span></div>
+        <div class="u-card-row"><span class="u-card-row-label">Top model</span><span class="u-card-row-val" style="font-size:10px">${u.top_model||'—'}</span></div>
+      </div>
+      <div class="u-bar-wrap" style="margin-top:10px">
+        <div class="u-bar-fill" style="width:${r.total_cost_usd>0?Math.round(u.cost/r.total_cost_usd*100):0}%"></div>
+      </div>
+      <div style="font-size:10px;color:var(--t4);margin-top:3px">${r.total_cost_usd>0?Math.round(u.cost/r.total_cost_usd*100):0}% of team spend</div>
+    </div>`).join('');
+
+  // Recommendations
+  const patterns=new Set(r.findings.map(f=>f.pattern));
+  const recs=[];
+  if(patterns.has('context_bloat'))
+    recs.push('<strong>Context bloat (highest priority):</strong> Implement session-reset triggers — start a new context after each major task completion. Cap history to last 20 turns using a sliding window. This alone typically saves 60–70% on cache-read costs.');
+  if(patterns.has('user_concentration'))
+    recs.push('<strong>Usage concentration:</strong> One power user is driving most spend. Review their workflows for automation opportunities. Consider dedicated API keys per project for cost attribution.');
+  if(patterns.has('model_overkill'))
+    recs.push('<strong>Model routing:</strong> Route classification, formatting, and short-answer tasks to claude-haiku or gpt-4o-mini. Reserve opus/sonnet for complex reasoning and code generation. Typical savings: 40–60% on those call types.');
+  if(patterns.has('usage_spike'))
+    recs.push('<strong>Cost guardrails:</strong> Add per-session token limits and cost circuit-breakers. A single runaway conversation can cost as much as a full day of normal usage.');
+  if(patterns.has('zero_output'))
+    recs.push('<strong>Aborted calls:</strong> Calls with no output tokens indicate timeouts or cancellations. Add retry logic with exponential backoff and surface errors to users immediately to avoid silent waste.');
+  if(patterns.has('peak_day_spend'))
+    recs.push('<strong>Peak spend anomalies:</strong> Set up daily spend alerts at 1.5× your average daily budget. Use monk in CI to detect runaway patterns before they compound.');
+  if(recs.length===0)
+    recs.push('No critical issues detected. Continue monitoring with monk and review again after major workflow changes.');
+
+  const recCard=document.getElementById('u-recs-card');
+  recCard.style.display='block';
+  document.getElementById('u-recs-body').innerHTML='<ol style="padding-left:18px;display:flex;flex-direction:column;gap:10px">'+
+    recs.map(r=>`<li>${r}</li>`).join('')+'</ol>';
+}
 </script>
 </body>
 </html>"""
@@ -1274,6 +1612,17 @@ class _Handler(BaseHTTPRequestHandler):
             self._respond(200, "application/json", body)
         elif self.path == "/health":
             self._respond(200, "text/plain", b"ok")
+        elif self.path == "/usage-demo":
+            # Serve the anonymised demo CSV fixture if it exists
+            demo_paths = [
+                Path(__file__).parent.parent / "tests" / "fixtures" / "demo_usage.csv",
+                Path("tests/fixtures/demo_usage.csv"),
+            ]
+            for p in demo_paths:
+                if p.exists():
+                    self._respond(200, "text/csv", p.read_bytes())
+                    return
+            self._respond(404, "text/plain", b"demo fixture not found")
         else:
             self._respond(404, "text/plain", b"not found")
 
@@ -1298,6 +1647,19 @@ class _Handler(BaseHTTPRequestHandler):
                 self._respond(200, "application/json", json.dumps({"ok": True, "file": str(dest)}).encode())
             except Exception as e:
                 self._respond(500, "application/json", json.dumps({"ok": False, "error": str(e)}).encode())
+        elif self.path == "/analyze-usage":
+            length = int(self.headers.get("Content-Length", 0))
+            csv_text = self.rfile.read(length).decode("utf-8-sig", errors="replace") if length else ""
+            try:
+                from monk.parsers.usage_csv import parse_usage_csv, FormatError
+                from monk.usage_analyzer import analyze
+                records, warnings, platform = parse_usage_csv(csv_text, anonymise=True)
+                report = analyze(records, warnings=warnings, platform=platform)
+                self._respond(200, "application/json",
+                    json.dumps({"ok": True, "report": report.to_dict()}).encode())
+            except Exception as exc:
+                self._respond(200, "application/json",
+                    json.dumps({"ok": False, "error": str(exc)}).encode())
         elif self.path == "/simulate":
             length = int(self.headers.get("Content-Length", 0))
             body_data = json.loads(self.rfile.read(length)) if length else {}

@@ -176,6 +176,13 @@ Dev:
 
 ## Recent Changes (Cowork sessions 2026-04-18 → 2026-04-21)
 
+**v0.4.9 — Team usage CSV analyzer + Usage dashboard tab (2026-04-21)**
+- `parsers/usage_csv.py`: team AI billing CSV parser — auto-detects Claude.ai / Cursor / OpenAI formats, user anonymisation, full error handling
+- `usage_analyzer.py`: 6 cost-pattern detectors (context_bloat, model_overkill, usage_spike, user_concentration, peak_day_spend, zero_output), savings estimates, rich console report with case study benchmark
+- `cli.py`: `monk usage <csv>` command — parse → analyze → render → optional JSON export, exits 1 on high findings
+- `serve.py`: Usage ◈ tab — drag-drop CSV upload, `/analyze-usage` POST endpoint, visual per-user cards + model breakdown + findings with savings estimates + workflow recommendations panel, `/usage-demo` endpoint for anonymised case study
+- `tests/fixtures/demo_usage.csv`: 95-row anonymised benchmark dataset (3 users, 69 days, Claude.ai format)
+
 **v0.4.8 — LangGraph support + handoff_loop detector (2026-04-21)**
 - `parsers/auto.py`: LangGraph format parser — detects `messages[]` with `usage_metadata`, extracts one TraceCall per AIMessage, resolves tool results via `tool_call_id` matching
 - `detectors/handoff_loop.py`: new TRACE_DETECTORS entry — catches `transfer_to_*` / `transfer_back_to_*` cycling between agents (A↔B bouncing 3+ times). Fires on LangGraph Supervisor and Swarm traces
@@ -200,17 +207,18 @@ Dev:
 
 ## Next Priorities
 
-- [ ] Commit v0.4.8 and push to GitHub:
+- [ ] Commit v0.4.9 and push to GitHub:
   ```bash
   cd ~/Documents/ClaudeProject/monk
   rm -f .git/index.lock .git/HEAD.lock
-  git add monk/__init__.py monk/parsers/auto.py monk/detectors/handoff_loop.py \
-          monk/detectors/__init__.py monk/simulate.py monk/serve.py \
+  git add monk/__init__.py monk/parsers/auto.py monk/parsers/usage_csv.py \
+          monk/detectors/handoff_loop.py monk/detectors/__init__.py \
+          monk/simulate.py monk/serve.py monk/usage_analyzer.py monk/cli.py \
+          tests/test_detectors.py tests/fixtures/demo_usage.csv \
           pyproject.toml README.md CLAUDE.md
-  git commit -m "✨ v0.4.8: LangGraph parser, handoff_loop detector, supervisor/swarm presets"
+  git commit -m "✨ v0.4.9: team usage CSV analyzer, Usage dashboard tab, LangGraph parser, handoff_loop detector"
   git push https://baman95:GITHUB_TOKEN@github.com/Blueconomy/monk.git main
   ```
-- [ ] Add unit tests for `handoff_loop` and LangGraph parser to `tests/test_detectors.py`
 - [ ] Consider real-time mode (OTEL SDK integration) as next major feature
 - [ ] Consider adding confidence scores to findings (high-confidence vs heuristic-only)
 - [ ] Explore Slack / PagerDuty alerts for real-time monitoring

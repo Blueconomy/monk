@@ -696,3 +696,46 @@ def serve(path, port, interval):
     """Start the live dashboard and watch PATH for new trace files."""
     from monk.serve import serve as _serve
     _serve(path, port=port, interval=interval)
+
+
+@main.command("usage")
+@click.argument("csv_file", type=click.Path(exists=True))
+@click.option("--json", "json_out", default=None,
+              metavar="FILE", help="Export findings as JSON to FILE")
+@click.option("--show-users", is_flag=True, default=False,
+              help="Show real user names instead of anonymised labels")
+@click.option("--no-case-study", is_flag=True, default=False,
+              help="Suppress the benchmark case study panel")
+def usage(csv_file: str, json_out: str | None, show_users: bool, no_case_study: bool):
+    """Analyse a team AI usage CSV export and surface cost patterns.
+
+    Supports: Claude.ai team export, Cursor billing CSV, OpenAI usage export.
+
+    \b
+    Examples:
+      monk usage team-usage-events.csv
+      monk usage usage.csv --json findings.json
+      monk usage usage.csv --show-users
+    """
+    from monk.parsers.usage_csv import parse_usage_csv, FormatError
+    from monk.usage_analyzer import analyze, render_usage_report
+
+    try:
+        records, warnings, platform = parse_usage_csv(csv_file, anonymise=not show_users)
+    except FormatError as e:
+        console.print(f"\n[bold red]Format error:[/] {e}")
+        raise SystemExit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Failed to parse CSV:[/] {e}")
+        raise SystemExit(1)
+
+    report = analyze(records, warnings=warnings, platform=platform)
+    render_usage_report(report, show_case_study=not no_case_study)
+
+    if json_out:
+        Path(json_out).write_text(report.to_json(), encoding="utf-8")
+        console.print(f"\n[dim]Findings exported to {json_out}[/]")
+
+    # Exit 1 if high-severity findings (CI-friendly)
+    if any(f.severity == "high" for f in report.findings):
+        raise SystemExit(1)
