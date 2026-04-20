@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "monk-ai"
-version = "0.4.9"
+version = "0.4.10"
 description = "Find hidden cost leaks and blind spots in your agentic AI workflows — 15 deterministic detectors, LangGraph support, team usage CSV analyzer, live dashboard, workflow simulator"
 readme = "README.md"
 license = { text = "MIT" }
