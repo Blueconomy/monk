@@ -86,6 +86,7 @@ def _print_home():
     console.print()
     console.print("    [bold orange1]monk quickstart[/bold orange1]                  demo data + live dashboard in one command")
     console.print("    [bold orange1]monk demo[/bold orange1]                        download real agent data and run analysis")
+    console.print("    [bold orange1]monk simulate[/bold orange1]                    generate synthetic traces with failure patterns")
     console.print("    [bold orange1]monk init[/bold orange1]                        scaffold a traces/ folder + config")
     console.print()
     console.print("  [bold white]Core commands[/bold white]")
@@ -604,10 +605,92 @@ def run(
 
 
 @main.command()
+@click.option("--pattern", "patterns", default="all", show_default=True,
+              help="Comma-separated patterns to simulate, or 'all'. "
+                   "Choices: retry_loop, empty_return, agent_loop, context_bloat, "
+                   "model_overkill, healthy")
+@click.option("--sessions", default=3, show_default=True,
+              help="Number of sessions to generate per pattern.")
+@click.option("-o", "--output", "output_path", default="traces/sim.jsonl", show_default=True,
+              help="Output file path.")
+@click.option("--seed", default=42, show_default=True,
+              help="Random seed (0 = random).")
+@click.option("--run", "do_run", is_flag=True, default=False,
+              help="Run monk analysis immediately after generating.")
+def simulate(patterns: str, sessions: int, output_path: str, seed: int, do_run: bool):
+    """Generate synthetic agent traces with configurable failure patterns.
+
+    \b
+    Use this to:
+      - Test monk's detectors before you have real traces
+      - Reproduce specific failure modes in isolation
+      - Demo cost leaks to stakeholders with realistic data
+      - Validate that a fix actually eliminated a pattern
+
+    \b
+    Examples:
+      monk simulate                              # all patterns, 3 sessions each
+      monk simulate --pattern retry_loop         # only retry loops
+      monk simulate --pattern agent_loop,healthy --sessions 10
+      monk simulate --run                        # generate + analyze immediately
+    """
+    from monk.simulate import generate, write_jsonl, ALL_PATTERNS
+
+    console.print()
+    console.print("  🕵️  [bold white]monk simulate[/bold white]")
+    console.print()
+
+    # Parse pattern list
+    if patterns.strip().lower() == "all":
+        pattern_list = ALL_PATTERNS
+    else:
+        pattern_list = [p.strip() for p in patterns.split(",")]
+
+    # Validate
+    unknown = [p for p in pattern_list if p not in ALL_PATTERNS]
+    if unknown:
+        console.print(f"  [red]Unknown pattern(s): {', '.join(unknown)}[/red]")
+        console.print(f"  Available: {', '.join(ALL_PATTERNS)}")
+        sys.exit(1)
+
+    _seed = seed if seed != 0 else None
+    records = generate(pattern_list, sessions_per_pattern=sessions, seed=_seed)
+
+    out = write_jsonl(records, output_path)
+    console.print(f"  [green]✓[/green]  Generated [bold]{len(records)}[/bold] calls "
+                  f"({len(pattern_list)} patterns × {sessions} sessions)")
+    console.print(f"  [green]✓[/green]  Written → [cyan]{out}[/cyan]")
+    console.print()
+
+    for p in pattern_list:
+        icon = "🔴" if p != "healthy" else "🟢"
+        console.print(f"  {icon}  [dim]{p}[/dim]")
+    console.print()
+
+    if do_run:
+        from monk.parsers.auto import parse_traces as _pt
+        from monk.report import render_report as _rr
+        calls = _pt(str(out))
+        findings = []
+        for det in ALL_DETECTORS:
+            if not det.requires_spans:
+                findings.extend(det.run(calls))
+        findings.sort(key=lambda f: (
+            -{"low": 0, "medium": 1, "high": 2}.get(f.severity, 0),
+            -f.estimated_waste_usd_per_day,
+        ))
+        _rr(findings, len(calls), str(out))
+    else:
+        console.print(f"  [dim]Run analysis:  [/dim][orange1]monk run[/orange1] [cyan]{out}[/cyan]")
+        console.print(f"  [dim]Start dashboard: [/dim][orange1]monk serve[/orange1] [cyan]{Path(output_path).parent}[/cyan]")
+        console.print()
+
+
+@main.command()
 @click.argument("path", default="./traces")
 @click.option("--port", default=9090, help="Metrics server port")
 @click.option("--interval", default=30, help="Rescan interval in seconds")
 def serve(path, port, interval):
-    """Start a Prometheus metrics server that watches PATH for trace files."""
+    """Start the live dashboard and watch PATH for new trace files."""
     from monk.serve import serve as _serve
     _serve(path, port=port, interval=interval)

@@ -34,6 +34,16 @@ pip install monk-ai
 
 ---
 
+## Quickstart
+
+```bash
+monk quickstart
+```
+
+Writes 33 built-in demo traces, runs analysis, and opens the live dashboard at `http://localhost:9090` — all in one command.
+
+---
+
 ## Benchmark results
 
 Evaluated on **8 real-world agentic trace datasets** — including PatronusAI's TRAIL benchmark with human-labeled ground truth across 20 error categories.
@@ -58,7 +68,7 @@ Evaluated on **8 real-world agentic trace datasets** — including PatronusAI's 
 | Version | Precision | Recall | F1 | Detectors |
 |---|---|---|---|---|
 | v0.1 | 84.85% | 84.85% | 84.85% | 5 |
-| **v0.3 (current)** | **100%** | **100%** | **100%** | **14** |
+| **v0.4.6 (current)** | **100%** | **100%** | **100%** | **14** |
 
 Zero false positives. All 33 error-containing TRAIL traces caught.  
 Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BENCHMARK.md)
@@ -67,24 +77,24 @@ Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BE
 
 ## What monk detects
 
-14 detectors across two levels. All deterministic — no LLM-as-judge, no external API calls.
+14 detectors. All deterministic — no LLM-as-judge, no external API calls.
 
 **Trace detectors** — work on OpenAI, Anthropic, LangSmith, or raw JSONL:
 
 | Detector | What it finds |
 |---|---|
 | `retry_loop` | Same tool called 3+ consecutive times |
-| `empty_return` | Tool returns null, agent retries anyway |
+| `empty_return` | Tool returns null/empty, agent retries anyway |
 | `model_overkill` | Expensive model doing formatting or classification |
 | `context_bloat` | System prompt >55% of budget, or unbounded history growth |
 | `agent_loop` | Agent cycling A→B→A→B without progress |
-| `text_io` | Low output compression, truncated responses, unbounded input growth |
+| `text_io` | Low output compression, unbounded input growth |
 
 **Span detectors** — require OpenTelemetry traces:
 
 | Detector | What it finds |
 |---|---|
-| `error_cascade` | Tool fails silently → 6–8 more LLM calls wasted on poisoned context |
+| `error_cascade` | Tool fails silently → downstream LLM calls wasted on poisoned context |
 | `token_bloat` | Token spikes (worst seen: 583K — 26× the session median) |
 | `latency_spike` | Single-call outlier latency vs. session median |
 | `cross_turn_memory` | Same tool + args re-fetched across turns |
@@ -98,6 +108,9 @@ Full methodology: [BENCHMARK.md](https://github.com/Blueconomy/monk/blob/main/BE
 ## Usage
 
 ```bash
+# Fastest path — built-in demo, analysis, live dashboard
+monk quickstart
+
 # Analyse a trace file or folder
 monk run agent_traces.jsonl
 monk run ./traces/
@@ -111,8 +124,16 @@ monk run traces/ --json findings.json
 # Only surface high-severity findings
 monk run traces/ --min-severity high
 
-# Save labeled text samples for LLM judge training
-monk run traces/ --samples samples.jsonl
+# Download real benchmark datasets and analyze them
+monk demo
+
+# Generate synthetic traces with configurable failure patterns
+monk simulate                                  # all patterns
+monk simulate --pattern retry_loop,agent_loop  # specific patterns
+monk simulate --sessions 10 --run              # generate + analyze immediately
+
+# Start the live dashboard
+monk serve ./traces/ --port 9090
 ```
 
 **CI integration** — monk exits `1` if high-severity findings exist:
@@ -130,6 +151,44 @@ monk.instrument()  # patches openai + anthropic automatically
 
 # monk prints findings live as your agent runs
 ```
+
+---
+
+## Live dashboard
+
+```bash
+monk serve ./traces/ --port 9090
+```
+
+Opens a web dashboard at `http://localhost:9090` with:
+
+- KPI cards: waste/day, projected/month, total findings, calls analyzed
+- Severity breakdown with color-coded cards (high / medium / low)
+- Waste ranked by detector with gradient bars
+- Recent findings feed with fix suggestions
+- Dataset downloader (tau-bench, Finance, TRAIL, GAIA, MemGPT, Nemotron)
+- Prometheus metrics at `/metrics` for Grafana integration
+- Auto-refreshes every 15 seconds
+- "⚡ Load sample" button — populates demo data in one click
+
+---
+
+## Simulate workflows
+
+```bash
+monk simulate --pattern retry_loop,empty_return --sessions 5 --run
+```
+
+Generate synthetic trace data with specific failure patterns. Useful for:
+
+- Testing your detectors before you have real production traces
+- Reproducing a specific failure mode in isolation to verify a fix
+- Demoing cost leaks to stakeholders with realistic numbers
+- Validating that a code change actually eliminated a pattern
+
+Available patterns: `retry_loop`, `empty_return`, `agent_loop`, `context_bloat`, `model_overkill`, `healthy`
+
+The `healthy` pattern generates clean sessions with no failures — verifying monk produces zero findings on well-behaved agents.
 
 ---
 
@@ -166,19 +225,22 @@ All benchmark fixtures are public:
 
 ## Roadmap
 
+- [x] 14 deterministic detectors (trace + span level)
+- [x] Live dashboard with dataset downloader
 - [x] Real-time instrumentation (`monk.instrument()`)
-- [x] Text I/O tracking + LLM judge sample collection
+- [x] `monk simulate` — synthetic workflow sandbox
+- [x] Prometheus metrics + Grafana-ready `/metrics`
 - [ ] Prompt compression suggestions
 - [ ] Slack / PagerDuty alerts
-- [ ] Web dashboard
+- [ ] Confidence scores per finding
 
 ---
 
 ## Contributing
 
-To add a detector, see the [contributing guide](https://github.com/Blueconomy/monk/blob/main/CONTRIBUTING.md) on GitHub.
+To add a detector: create `monk/detectors/your_detector.py` extending `BaseDetector`, register it in `monk/detectors/__init__.py`, add tests. Detectors must be deterministic — same traces → same findings.
 
-The short version: create `monk/detectors/your_detector.py` extending `BaseDetector`, register it in `monk/detectors/__init__.py`, add tests. Detectors must be deterministic — same traces → same findings.
+See the full guide: [CONTRIBUTING.md](https://github.com/Blueconomy/monk/blob/main/CONTRIBUTING.md)
 
 ---
 

@@ -79,6 +79,9 @@ def _detect_loops(
             ngram_counts[gram].append(i)
 
         for gram, positions in ngram_counts.items():
+            # Skip if all tools in the pattern are the same → that's retry_loop's job
+            if len(set(gram)) == 1:
+                continue
             if len(positions) >= LOOP_THRESHOLD:
                 # Only count positions after the first occurrence as waste
                 wasted_positions = positions[1:]

@@ -961,11 +961,14 @@ def serve(path: str, port: int = 9090, interval: int = 30) -> None:
     store = MetricsStore()
     dlmgr = DownloadManager(target)
     _lock = threading.Lock()
+    _last_scan: list[float] = [0.0]   # mutable container so closure can mutate it
+    _DEBOUNCE = 8                      # minimum seconds between scans
 
     # ── Initial scan ─────────────────────────────────────────────────────────
     fresh, calls, findings, nfiles = _scan_all(target)
     with _lock:
         store.__dict__.update(fresh.__dict__)
+        _last_scan[0] = time.time()
 
     print(f"")
     print(f"  🕵️  monk serve  v{_Handler.version}")
@@ -983,6 +986,11 @@ def serve(path: str, port: int = 9090, interval: int = 30) -> None:
 
     # ── Rescan helper (also called by /scan and /load-sample endpoints) ─────
     def _rescan():
+        now = time.time()
+        with _lock:
+            if now - _last_scan[0] < _DEBOUNCE:
+                return          # debounce: skip if scanned too recently
+            _last_scan[0] = now
         try:
             fresh, calls, findings, nfiles = _scan_all(target)
             with _lock:
