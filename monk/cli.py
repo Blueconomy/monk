@@ -33,20 +33,42 @@ DEMO_DATASETS = [
         "name":    "taubench_traces.jsonl",
         "label":   "tau-bench",
         "desc":    "17,932 calls · banking + e-commerce agents",
-        "size_mb": 4.2,
+        "size_mb": 9.9,
     },
     {
         "name":    "finance_traces.jsonl",
         "label":   "finance (10-K ReAct)",
         "desc":    "4,610 calls · LangGraph financial analysis",
-        "size_mb": 1.1,
+        "size_mb": 3.9,
     },
     {
         "name":    "trail_otel.jsonl",
         "label":   "TRAIL (PatronusAI)",
         "desc":    "879 spans · ground-truth benchmark (OTEL)",
-        "size_mb": 0.5,
+        "size_mb": 25.8,
     },
+]
+
+# Synthetic sample — used as fallback when HF download fails
+SYNTHETIC_SAMPLE = [
+    {"session_id":"sess_a","model":"gpt-4o","input_tokens":1800,"output_tokens":120,"tool_name":"calculator","tool_result":"42"},
+    {"session_id":"sess_a","model":"gpt-4o","input_tokens":1820,"output_tokens":110,"tool_name":"calculator","tool_result":"42"},
+    {"session_id":"sess_a","model":"gpt-4o","input_tokens":1840,"output_tokens":115,"tool_name":"calculator","tool_result":"42"},
+    {"session_id":"sess_a","model":"gpt-4o","input_tokens":1860,"output_tokens":118,"tool_name":"calculator","tool_result":"42"},
+    {"session_id":"sess_b","model":"gpt-4o","input_tokens":2100,"output_tokens":130,"tool_name":"web_search","tool_result":""},
+    {"session_id":"sess_b","model":"gpt-4o","input_tokens":2120,"output_tokens":140,"tool_name":"web_search","tool_result":None},
+    {"session_id":"sess_b","model":"gpt-4o","input_tokens":2140,"output_tokens":125,"tool_name":"web_search","tool_result":""},
+    {"session_id":"sess_c","model":"gpt-4o","input_tokens":18000,"output_tokens":200,"system_prompt_tokens":13000,"tool_name":"lookup","tool_result":"result"},
+    {"session_id":"sess_c","model":"gpt-4o","input_tokens":19200,"output_tokens":180,"system_prompt_tokens":13000,"tool_name":"lookup","tool_result":"result2"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1600,"output_tokens":100,"tool_name":"search","tool_result":"results"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1700,"output_tokens":110,"tool_name":"summarize","tool_result":"summary"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1650,"output_tokens":105,"tool_name":"search","tool_result":"results"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1720,"output_tokens":112,"tool_name":"summarize","tool_result":"summary"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1660,"output_tokens":108,"tool_name":"search","tool_result":"results"},
+    {"session_id":"sess_d","model":"gpt-4o","input_tokens":1730,"output_tokens":115,"tool_name":"summarize","tool_result":"summary"},
+    {"session_id":"sess_e","model":"gpt-4o","input_tokens":300,"output_tokens":40,"tool_name":None,"tool_result":None},
+    {"session_id":"sess_e","model":"gpt-4o","input_tokens":280,"output_tokens":35,"tool_name":None,"tool_result":None},
+    {"session_id":"sess_f","model":"gpt-4o-mini","input_tokens":900,"output_tokens":200,"tool_name":"db_query","tool_result":"[{id:1}]"},
 ]
 
 
@@ -232,10 +254,13 @@ def demo(dataset, dest_dir, no_run):
 
     if not downloaded:
         console.print()
-        console.print("  [red]No files downloaded.[/red]")
-        console.print("  Check your internet connection or visit:")
-        console.print("  [cyan]https://huggingface.co/datasets/Blueconomy/monk-benchmarks[/cyan]")
-        sys.exit(1)
+        console.print("  [yellow]Could not reach HuggingFace — generating a synthetic sample instead.[/yellow]")
+        import json as _json
+        fallback = dest / "sample_agent.jsonl"
+        fallback.write_text("\n".join(_json.dumps(r) for r in SYNTHETIC_SAMPLE))
+        console.print(f"  [green]✓[/green]  Created [cyan]{fallback}[/cyan]  (18 records, 6 sessions)")
+        downloaded.append(fallback)
+        console.print()
 
     console.print()
 

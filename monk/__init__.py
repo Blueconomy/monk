@@ -1,5 +1,5 @@
 """monk — Agentic workflow blind spot detector."""
-__version__ = "0.1.0"
+__version__ = "0.4.4"
 
 from monk.sdk import instrument, SpanBuffer
 from monk.sdk.watcher import watch
